@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "creation": "2026-07-27 18:50:07.886781",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "restrictive_practice"
+ ],
+ "fields": [
+  {
+   "fieldname": "restrictive_practice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Restrictive Practice",
+   "options": "Restrictive Practice Type",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-30 13:30:55.710796",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Participant Restrictive Practice",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,201 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "MED-REP-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "provider",
+    "visit_date",
+    "column_break_1",
+    "staff_attended",
+    "provider_contact",
+    "provider_address",
+    "section_reason",
+    "reason_for_visit",
+    "section_provider_notes",
+    "medical_provider_notes",
+    "section_staff_notes",
+    "chc_staff_summary_notes",
+    "section_next_appt",
+    "next_appointment_status",
+    "next_appointment_date",
+    "next_appointment_time",
+    "column_break_2",
+    "medical_report_started",
+    "added_to_schedule",
+    "section_signature",
+    "staff_name",
+    "report_date",
+    "signature"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Participant Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "fieldname": "provider",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Provider",
+      "reqd": 1
+    },
+    {
+      "default": "Today",
+      "fieldname": "visit_date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "staff_attended",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Staff attended",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "provider_contact",
+      "fieldtype": "Data",
+      "label": "Provider Contact"
+    },
+    {
+      "fieldname": "provider_address",
+      "fieldtype": "Small Text",
+      "label": "Provider Address"
+    },
+    {
+      "fieldname": "section_reason",
+      "fieldtype": "Section Break",
+      "label": "Reason for Visit"
+    },
+    {
+      "fieldname": "reason_for_visit",
+      "fieldtype": "Small Text",
+      "label": "Reason for Visit",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_provider_notes",
+      "fieldtype": "Section Break",
+      "label": "Medical Provider Notes"
+    },
+    {
+      "fieldname": "medical_provider_notes",
+      "fieldtype": "Small Text",
+      "label": "Medical Provider Notes"
+    },
+    {
+      "fieldname": "section_staff_notes",
+      "fieldtype": "Section Break",
+      "label": "CHC Staff Summary Notes"
+    },
+    {
+      "fieldname": "chc_staff_summary_notes",
+      "fieldtype": "Small Text",
+      "label": "CHC Staff Summary Notes"
+    },
+    {
+      "fieldname": "section_next_appt",
+      "fieldtype": "Section Break",
+      "label": "Next Appointment & Workflow Checks"
+    },
+    {
+      "fieldname": "next_appointment_status",
+      "fieldtype": "Select",
+      "label": "Next Appointment",
+      "options": "Booked\nNot Required"
+    },
+    {
+      "fieldname": "next_appointment_date",
+      "fieldtype": "Date",
+      "label": "Next Appointment Date"
+    },
+    {
+      "fieldname": "next_appointment_time",
+      "fieldtype": "Time",
+      "label": "Next Appointment Time"
+    },
+    {
+      "fieldname": "column_break_2",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "No",
+      "fieldname": "medical_report_started",
+      "fieldtype": "Select",
+      "label": "Medical Report Started",
+      "options": "Yes\nNo"
+    },
+    {
+      "default": "No",
+      "fieldname": "added_to_schedule",
+      "fieldtype": "Select",
+      "label": "Added to Schedule",
+      "options": "Yes\nNo"
+    },
+    {
+      "fieldname": "section_signature",
+      "fieldtype": "Section Break",
+      "label": "Sign Off"
+    },
+    {
+      "fieldname": "staff_name",
+      "fieldtype": "Link",
+      "label": "Staff Name",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "default": "Today",
+      "fieldname": "report_date",
+      "fieldtype": "Date",
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "signature",
+      "fieldtype": "Data",
+      "label": "Signature"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Medical Report Summary",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

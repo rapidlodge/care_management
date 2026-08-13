@@ -1,0 +1,218 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "FALL-.YYYY.-.#####",
+ "creation": "2026-08-02 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant_name",
+  "name_preference",
+  "date_of_birth",
+  "column_break_personal",
+  "address",
+  "contact_number",
+  "section_aim",
+  "aim_and_objectives",
+  "section_assessment",
+  "risk_factors",
+  "column_break_assess",
+  "causes",
+  "section_strategies",
+  "preventative_strategies_to_minimize_falls",
+  "section_observations",
+  "what_to_look_for_if_participant_has_fallen",
+  "section_response",
+  "immediate_response_if_participant_is_injured_from_fall",
+  "section_other",
+  "other_documentation_and_reporting",
+  "section_approval",
+  "approved_by_service_manager",
+  "column_break_approval",
+  "approval_signature",
+  "approval_date",
+  "section_reviews",
+  "review_history"
+ ],
+ "fields": [
+  {
+   "fieldname": "name_preference",
+   "fieldtype": "Data",
+   "label": "Name Preference"
+  },
+  {
+   "fetch_from": "participant.date_of_birth",
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_personal",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "label": "Contact Number (Service Manager)"
+  },
+  {
+   "fieldname": "section_aim",
+   "fieldtype": "Section Break",
+   "label": "Aim & Objectives"
+  },
+  {
+   "default": "To provide appropriate management / treatment of client at risk of falling.",
+   "fieldname": "aim_and_objectives",
+   "fieldtype": "Small Text",
+   "label": "Aim & Objectives",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_assessment",
+   "fieldtype": "Section Break",
+   "label": "Risk Factors & Causes"
+  },
+  {
+   "fieldname": "risk_factors",
+   "fieldtype": "Small Text",
+   "label": "Risk Factors",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_assess",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "causes",
+   "fieldtype": "Small Text",
+   "label": "Causes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_strategies",
+   "fieldtype": "Section Break",
+   "label": "Preventative Strategies"
+  },
+  {
+   "fieldname": "preventative_strategies_to_minimize_falls",
+   "fieldtype": "Small Text",
+   "label": "Preventative Strategies to Minimize Falls",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_observations",
+   "fieldtype": "Section Break",
+   "label": "Post-Fall Clinical Observations"
+  },
+  {
+   "fieldname": "what_to_look_for_if_participant_has_fallen",
+   "fieldtype": "Small Text",
+   "label": "What To Look For If Participant Has Fallen",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_response",
+   "fieldtype": "Section Break",
+   "label": "Immediate Emergency Response"
+  },
+  {
+   "fieldname": "immediate_response_if_participant_is_injured_from_fall",
+   "fieldtype": "Small Text",
+   "label": "Immediate Response If Participant Is Injured From Fall",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_other",
+   "fieldtype": "Section Break",
+   "label": "Other Requirements"
+  },
+  {
+   "default": "Complete incident form and document in progress notes. GP appointments / visits or Hospital Admissions are to be recorded.",
+   "fieldname": "other_documentation_and_reporting",
+   "fieldtype": "Small Text",
+   "label": "Other Requirements & Incident Reporting"
+  },
+  {
+   "fieldname": "section_approval",
+   "fieldtype": "Section Break",
+   "label": "Management Approval"
+  },
+  {
+   "fieldname": "approved_by_service_manager",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Service Manager",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_approval",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approval_signature",
+   "fieldtype": "Data",
+   "label": "Sign / Confirmation"
+  },
+  {
+   "default": "Today",
+   "fieldname": "approval_date",
+   "fieldtype": "Date",
+   "label": "Approval Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_reviews",
+   "fieldtype": "Section Break",
+   "label": "Periodic Review History Log"
+  },
+  {
+   "fieldname": "review_history",
+   "fieldtype": "Table",
+   "label": "Reviews",
+   "options": "Falls Risk Review Entry",
+   "reqd": 1
+  },
+  {
+   "fieldname": "participant_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant Name",
+   "options": "Participant Profile",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 13:27:05.369668",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Falls Risk Plan",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,59 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "time",
+    "type_of_fluid",
+    "amount_ml",
+    "staff_initials"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "time",
+      "fieldtype": "Time",
+      "in_list_view": 1,
+      "label": "Time",
+      "reqd": 1
+    },
+    {
+      "fieldname": "type_of_fluid",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Type of Fluid / Food",
+      "reqd": 1
+    },
+    {
+      "fieldname": "amount_ml",
+      "fieldtype": "Float",
+      "in_list_view": 1,
+      "label": "Amount (mL)",
+      "reqd": 1
+    },
+    {
+      "fieldname": "staff_initials",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Staff Initials",
+      "options": "User",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Fluid Intake Item",
+  "owner": "Administrator",
+  "permissions": []
+}

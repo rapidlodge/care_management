@@ -1,0 +1,258 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "INC-.YYYY.-.#####",
+ "creation": "2026-07-29 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "incident_status",
+  "assigned_staff",
+  "column_break_top",
+  "reported_by",
+  "reported_on",
+  "section_incident_details",
+  "participant",
+  "time_of_incident",
+  "location_of_incident",
+  "column_break_details",
+  "date_of_incident",
+  "incident_type",
+  "section_rp_details",
+  "was_rp_used",
+  "column_break_rp",
+  "was_the_rp_part_of_a_bsp",
+  "section_description",
+  "full_description_of_incident",
+  "severity",
+  "section_manager_actions",
+  "manager_actions_and_comments",
+  "manager_corrective_or_preventive_actions",
+  "reportable_to_commission",
+  "consequence_manager",
+  "is_this_likely_to_attract_media_attention",
+  "column_break_manager",
+  "action_and_notifications",
+  "likelihood_manager",
+  "section_linked_incidents",
+  "linked_incidents",
+  "linked_date",
+  "linked_comment"
+ ],
+ "fields": [
+  {
+   "default": "Open",
+   "fieldname": "incident_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Current Status",
+   "options": "Open\nInvestigation\nUnder Review\nClosed\nArchived",
+   "reqd": 1
+  },
+  {
+   "fieldname": "assigned_staff",
+   "fieldtype": "Link",
+   "label": "Assigned Staff",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "User"
+  },
+  {
+   "fieldname": "reported_on",
+   "fieldtype": "Datetime",
+   "label": "Reported On"
+  },
+  {
+   "fieldname": "section_incident_details",
+   "fieldtype": "Section Break",
+   "label": "Incident Details"
+  },
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "time_of_incident",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Time of Incident",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_of_incident",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Location of Incident",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_of_incident",
+   "fieldtype": "Date",
+   "label": "Date of Incident",
+   "reqd": 1
+  },
+  {
+   "fieldname": "incident_type",
+   "fieldtype": "Select",
+   "label": "Incident Type",
+   "options": "Aggression\nBehavioral\nInjury / Medical\nMedication Error\nProperty Damage\nAbsence / Missing Person\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_rp_details",
+   "fieldtype": "Section Break",
+   "label": "Restrictive Practices Information"
+  },
+  {
+   "default": "No",
+   "fieldname": "was_rp_used",
+   "fieldtype": "Select",
+   "label": "Was RP used",
+   "options": "No\nYes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_rp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "No",
+   "depends_on": "eval:doc.was_rp_used=='Yes'",
+   "fieldname": "was_the_rp_part_of_a_bsp",
+   "fieldtype": "Select",
+   "label": "Was the RP part of a BSP",
+   "options": "No\nYes"
+  },
+  {
+   "fieldname": "section_description",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "full_description_of_incident",
+   "fieldtype": "Long Text",
+   "label": "Full description of incident",
+   "reqd": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Low\nMedium\nSerious\nCritical / Severe",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_manager_actions",
+   "fieldtype": "Section Break",
+   "label": "Manager Actions"
+  },
+  {
+   "fieldname": "manager_actions_and_comments",
+   "fieldtype": "Small Text",
+   "label": "Manager Actions and Comments"
+  },
+  {
+   "fieldname": "manager_corrective_or_preventive_actions",
+   "fieldtype": "Small Text",
+   "label": "Manager Corrective or Preventive Actions"
+  },
+  {
+   "fieldname": "reportable_to_commission",
+   "fieldtype": "Select",
+   "label": "Do you think this incident is reportable to the Commission or other?",
+   "options": "Select\nYes\nNo\nUnder Review"
+  },
+  {
+   "fieldname": "consequence_manager",
+   "fieldtype": "Select",
+   "label": "Consequence (manager)",
+   "options": "Minor\nModerate\nMajor\nCatastrophic"
+  },
+  {
+   "fieldname": "is_this_likely_to_attract_media_attention",
+   "fieldtype": "Select",
+   "label": "Is this likely to attract media attention",
+   "options": "Select\nYes\nNo\nUnsure"
+  },
+  {
+   "fieldname": "column_break_manager",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "action_and_notifications",
+   "fieldtype": "Table MultiSelect",
+   "label": "Action and Notifications",
+   "options": "Incident Action Item"
+  },
+  {
+   "fieldname": "likelihood_manager",
+   "fieldtype": "Select",
+   "label": "Likelihood (manager)",
+   "options": "Rare\nUnlikely\nPossible\nLikely\nAlmost Certain"
+  },
+  {
+   "fieldname": "section_linked_incidents",
+   "fieldtype": "Section Break",
+   "label": "Linked Incidents"
+  },
+  {
+   "fieldname": "linked_incidents",
+   "fieldtype": "Table",
+   "label": "Linked Incidents List",
+   "options": "Linked Incident Item"
+  },
+  {
+   "fieldname": "linked_date",
+   "fieldtype": "Date",
+   "label": "Link Date"
+  },
+  {
+   "fieldname": "linked_comment",
+   "fieldtype": "Small Text",
+   "label": "Link Comment"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-30 13:06:56.547280",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Incident",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

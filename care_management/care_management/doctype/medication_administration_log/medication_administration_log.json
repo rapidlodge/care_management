@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "MED-LOG-.YYYY.-.#####",
+ "creation": "2026-08-02 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "week_commencing",
+  "has_uploaded_medication_purpose_form",
+  "section_items",
+  "medication_items"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "description": "Informational - marks which week this medication plan review covers. The weekday checkboxes on each medication row control the actual recurring schedule and keep recurring every week until this plan is updated.",
+   "fieldname": "week_commencing",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Week Commencing",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Medication Plan"
+  },
+  {
+   "fieldname": "medication_items",
+   "fieldtype": "Table",
+   "label": "Medications",
+   "options": "Medication Plan Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_uploaded_medication_purpose_form",
+   "fieldtype": "Check",
+   "label": "Has Uploaded Medication Purpose Form"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-09 16:32:18.791891",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Medication Administration Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,95 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "MED-CHK-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "date_of_birth",
+    "month",
+    "column_break_1",
+    "address",
+    "medications",
+    "section_entries",
+    "check_entries"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Resident Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "fetch_from": "participant.date_of_birth",
+      "fieldname": "date_of_birth",
+      "fieldtype": "Date",
+      "label": "DOB",
+      "read_only": 1
+    },
+    {
+      "fieldname": "month",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Month",
+      "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "medications",
+      "fieldtype": "Small Text",
+      "label": "Medications Summary"
+    },
+    {
+      "fieldname": "section_entries",
+      "fieldtype": "Section Break",
+      "label": "Daily Shift Medication Handover Checks"
+    },
+    {
+      "fieldname": "check_entries",
+      "fieldtype": "Table",
+      "label": "Shift Medication Checks",
+      "options": "Shift Medication Check Entry",
+      "reqd": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Shift Medication Check",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

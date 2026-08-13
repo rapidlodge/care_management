@@ -1,0 +1,64 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "description",
+    "location",
+    "column_break_1",
+    "action",
+    "staff_sign"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "Description",
+      "reqd": 1
+    },
+    {
+      "fieldname": "location",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Location",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "action",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "Action",
+      "reqd": 1
+    },
+    {
+      "fieldname": "staff_sign",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Staff Sign",
+      "options": "User",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Skin Integrity Item",
+  "owner": "Administrator",
+  "permissions": []
+}

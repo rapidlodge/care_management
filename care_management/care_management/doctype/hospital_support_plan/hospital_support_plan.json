@@ -1,0 +1,469 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "HOSP-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "date_plan_completed",
+    "date_of_birth",
+    "address",
+    "phone",
+    "gender",
+    "service_provider",
+    "column_break_card",
+    "medicare_number_expiry_date",
+    "pension_number_expiry_date",
+    "health_care_card_number",
+    "private_health_insurance_number",
+    "section_gp",
+    "gp_name",
+    "gp_address",
+    "gp_phone",
+    "column_break_neuro",
+    "neurologist_name",
+    "neurologist_address",
+    "neurologist_phone",
+    "section_cultural",
+    "religion_considerations",
+    "language_cultural_considerations",
+    "risk_alert_warning",
+    "section_consent",
+    "consent_person_name",
+    "consent_relationship",
+    "consent_mobile_number",
+    "section_medication",
+    "require_medication_during_admission",
+    "need_help_taking_medication",
+    "medication_help_description",
+    "section_medical",
+    "summary_of_medical_conditions",
+    "diagnosis",
+    "sight_or_hearing_problems",
+    "sight_hearing_description",
+    "section_contacts",
+    "disability_contacts",
+    "section_communication",
+    "how_person_communicates",
+    "support_required_to_make_choices",
+    "can_read_and_comprehend_written_info",
+    "section_emotional",
+    "emotional_and_behavioral_indicators",
+    "section_mobility",
+    "assistance_move_in_bed",
+    "assistance_move_in_bed_description",
+    "assistance_move_around_ward",
+    "assistance_move_around_ward_description",
+    "section_nutrition",
+    "mealtime_assistance_description",
+    "meals_texture",
+    "drinks_texture",
+    "enteral_feeds_required",
+    "section_personal_care",
+    "toileting_assistance_required",
+    "toileting_assistance_description",
+    "personal_care_assistance_required",
+    "personal_care_assistance_description",
+    "section_behaviour",
+    "has_behaviour_support_plan",
+    "good_day_description",
+    "bad_day_description",
+    "section_completion",
+    "completed_by_entries"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "default": "Today",
+      "fieldname": "date_plan_completed",
+      "fieldtype": "Date",
+      "label": "Date plan completed",
+      "reqd": 1
+    },
+    {
+      "fetch_from": "participant.date_of_birth",
+      "fieldname": "date_of_birth",
+      "fieldtype": "Date",
+      "label": "Date of birth",
+      "read_only": 1
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "phone",
+      "fieldtype": "Data",
+      "label": "Phone"
+    },
+    {
+      "fieldname": "gender",
+      "fieldtype": "Data",
+      "label": "Gender"
+    },
+    {
+      "default": "Connect Home Care",
+      "fieldname": "service_provider",
+      "fieldtype": "Data",
+      "label": "Service Provider"
+    },
+    {
+      "fieldname": "column_break_card",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "medicare_number_expiry_date",
+      "fieldtype": "Data",
+      "label": "Medicare Number / Expiry Date"
+    },
+    {
+      "fieldname": "pension_number_expiry_date",
+      "fieldtype": "Data",
+      "label": "Pension Number / Expiry Date"
+    },
+    {
+      "fieldname": "health_care_card_number",
+      "fieldtype": "Data",
+      "label": "Health Care Card Number"
+    },
+    {
+      "fieldname": "private_health_insurance_number",
+      "fieldtype": "Data",
+      "label": "Private Health Insurance Number"
+    },
+    {
+      "fieldname": "section_gp",
+      "fieldtype": "Section Break",
+      "label": "General Practitioner (GP)"
+    },
+    {
+      "fieldname": "gp_name",
+      "fieldtype": "Data",
+      "label": "General Practitioner (GP)"
+    },
+    {
+      "fieldname": "gp_address",
+      "fieldtype": "Small Text",
+      "label": "Address of GP"
+    },
+    {
+      "fieldname": "gp_phone",
+      "fieldtype": "Data",
+      "label": "Phone (GP)"
+    },
+    {
+      "fieldname": "column_break_neuro",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "neurologist_name",
+      "fieldtype": "Data",
+      "label": "Neurologist"
+    },
+    {
+      "fieldname": "neurologist_address",
+      "fieldtype": "Small Text",
+      "label": "Address (Neurologist)"
+    },
+    {
+      "fieldname": "neurologist_phone",
+      "fieldtype": "Data",
+      "label": "Phone (Neurologist)"
+    },
+    {
+      "fieldname": "section_cultural",
+      "fieldtype": "Section Break",
+      "label": "Religion & Cultural Considerations"
+    },
+    {
+      "fieldname": "religion_considerations",
+      "fieldtype": "Data",
+      "label": "Religion / religious considerations"
+    },
+    {
+      "fieldname": "language_cultural_considerations",
+      "fieldtype": "Data",
+      "label": "Language / cultural considerations"
+    },
+    {
+      "fieldname": "risk_alert_warning",
+      "fieldtype": "Small Text",
+      "label": "THIS PERSON IS AT RISK – ALERT"
+    },
+    {
+      "fieldname": "section_consent",
+      "fieldtype": "Section Break",
+      "label": "Person Who Provides Consent for Medical or Dental Procedures"
+    },
+    {
+      "fieldname": "consent_person_name",
+      "fieldtype": "Data",
+      "label": "Consent Person Name"
+    },
+    {
+      "fieldname": "consent_relationship",
+      "fieldtype": "Data",
+      "label": "Relationship"
+    },
+    {
+      "fieldname": "consent_mobile_number",
+      "fieldtype": "Data",
+      "label": "Mobile Number"
+    },
+    {
+      "fieldname": "section_medication",
+      "fieldtype": "Section Break",
+      "label": "Medication Requirements"
+    },
+    {
+      "default": "No",
+      "fieldname": "require_medication_during_admission",
+      "fieldtype": "Select",
+      "label": "Does the person require medication to be administered during the admission?",
+      "options": "Yes\nNo"
+    },
+    {
+      "default": "No",
+      "fieldname": "need_help_taking_medication",
+      "fieldtype": "Select",
+      "label": "Does the person need help with taking medication?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.need_help_taking_medication=='Yes'",
+      "fieldname": "medication_help_description",
+      "fieldtype": "Small Text",
+      "label": "If yes, describe (Medication Help)"
+    },
+    {
+      "fieldname": "section_medical",
+      "fieldtype": "Section Break",
+      "label": "Medical Information"
+    },
+    {
+      "fieldname": "summary_of_medical_conditions",
+      "fieldtype": "Small Text",
+      "label": "Summary of medical conditions"
+    },
+    {
+      "fieldname": "diagnosis",
+      "fieldtype": "Small Text",
+      "label": "Diagnosis"
+    },
+    {
+      "default": "No",
+      "fieldname": "sight_or_hearing_problems",
+      "fieldtype": "Select",
+      "label": "Does the person have sight or hearing problems?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.sight_or_hearing_problems=='Yes'",
+      "fieldname": "sight_hearing_description",
+      "fieldtype": "Small Text",
+      "label": "If yes, describe (Sight/Hearing)"
+    },
+    {
+      "fieldname": "section_contacts",
+      "fieldtype": "Section Break",
+      "label": "Disability Service Provider Contacts"
+    },
+    {
+      "fieldname": "disability_contacts",
+      "fieldtype": "Table",
+      "label": "Provider Contacts",
+      "options": "Hospital Provider Contact Item"
+    },
+    {
+      "fieldname": "section_communication",
+      "fieldtype": "Section Break",
+      "label": "Communication"
+    },
+    {
+      "fieldname": "how_person_communicates",
+      "fieldtype": "Small Text",
+      "label": "How does the person communicate?"
+    },
+    {
+      "fieldname": "support_required_to_make_choices",
+      "fieldtype": "Small Text",
+      "label": "What support does the person require to make choices?"
+    },
+    {
+      "fieldname": "can_read_and_comprehend_written_info",
+      "fieldtype": "Select",
+      "label": "Can the person read and comprehend written information?",
+      "options": "Yes\nNo\nPartially"
+    },
+    {
+      "fieldname": "section_emotional",
+      "fieldtype": "Section Break",
+      "label": "Emotional & Behavioral Indicators"
+    },
+    {
+      "fieldname": "emotional_and_behavioral_indicators",
+      "fieldtype": "Small Text",
+      "label": "How do people know if the person is happy, sad, sick, anxious, or confused?"
+    },
+    {
+      "fieldname": "section_mobility",
+      "fieldtype": "Section Break",
+      "label": "Mobility"
+    },
+    {
+      "default": "No",
+      "fieldname": "assistance_move_in_bed",
+      "fieldtype": "Select",
+      "label": "Assistance required to move in bed?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.assistance_move_in_bed=='Yes'",
+      "fieldname": "assistance_move_in_bed_description",
+      "fieldtype": "Small Text",
+      "label": "If yes, describe (Move in Bed)"
+    },
+    {
+      "default": "No",
+      "fieldname": "assistance_move_around_ward",
+      "fieldtype": "Select",
+      "label": "Assistance required to move around the ward?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.assistance_move_around_ward=='Yes'",
+      "fieldname": "assistance_move_around_ward_description",
+      "fieldtype": "Small Text",
+      "label": "If yes, describe (Move around Ward)"
+    },
+    {
+      "fieldname": "section_nutrition",
+      "fieldtype": "Section Break",
+      "label": "Mealtime Assistance / Swallowing / Nutrition"
+    },
+    {
+      "fieldname": "mealtime_assistance_description",
+      "fieldtype": "Small Text",
+      "label": "Describe mealtime assistance required"
+    },
+    {
+      "fieldname": "meals_texture",
+      "fieldtype": "Select",
+      "label": "Meals texture",
+      "options": "Unmodified\nSoft\nMinced & Moist\nPureed\nLiquid"
+    },
+    {
+      "fieldname": "drinks_texture",
+      "fieldtype": "Select",
+      "label": "Drinks texture",
+      "options": "Regular\nMildly thick\nModerately thick\nExtremely thick"
+    },
+    {
+      "default": "No",
+      "fieldname": "enteral_feeds_required",
+      "fieldtype": "Select",
+      "label": "Enteral feeds required?",
+      "options": "Yes\nNo"
+    },
+    {
+      "fieldname": "section_personal_care",
+      "fieldtype": "Section Break",
+      "label": "Toileting & Personal Care"
+    },
+    {
+      "default": "No",
+      "fieldname": "toileting_assistance_required",
+      "fieldtype": "Select",
+      "label": "Assistance with toileting or continence aids required?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.toileting_assistance_required=='Yes'",
+      "fieldname": "toileting_assistance_description",
+      "fieldtype": "Small Text",
+      "label": "Describe (Toileting)"
+    },
+    {
+      "default": "No",
+      "fieldname": "personal_care_assistance_required",
+      "fieldtype": "Select",
+      "label": "Assistance with dressing, showering or bathing required?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.personal_care_assistance_required=='Yes'",
+      "fieldname": "personal_care_assistance_description",
+      "fieldtype": "Small Text",
+      "label": "Describe (Personal Care)"
+    },
+    {
+      "fieldname": "section_behaviour",
+      "fieldtype": "Section Break",
+      "label": "Behaviour & Personal Preferences"
+    },
+    {
+      "default": "No",
+      "fieldname": "has_behaviour_support_plan",
+      "fieldtype": "Select",
+      "label": "Is there a Behaviour Support Plan?",
+      "options": "Yes\nNo"
+    },
+    {
+      "fieldname": "good_day_description",
+      "fieldtype": "Small Text",
+      "label": "What makes a good day for the person?"
+    },
+    {
+      "fieldname": "bad_day_description",
+      "fieldtype": "Small Text",
+      "label": "What makes a bad day for the person?"
+    },
+    {
+      "fieldname": "section_completion",
+      "fieldtype": "Section Break",
+      "label": "Completed By"
+    },
+    {
+      "fieldname": "completed_by_entries",
+      "fieldtype": "Table",
+      "label": "Completed By Entries",
+      "options": "Hospital Support Completion Item"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Hospital Support Plan",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

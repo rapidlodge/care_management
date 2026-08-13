@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "creation": "2026-07-27 18:50:08.287805",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "living_arrangement"
+ ],
+ "fields": [
+  {
+   "fieldname": "living_arrangement",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Living Arrangement",
+   "options": "Living Arrangement",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-30 13:30:14.028634",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Participant Living Arrangement",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

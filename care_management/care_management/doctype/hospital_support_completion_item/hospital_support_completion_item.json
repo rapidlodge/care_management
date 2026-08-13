@@ -1,0 +1,49 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "role",
+    "name1",
+    "signature",
+    "date"
+  ],
+  "fields": [
+    {
+      "fieldname": "role",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Role",
+      "options": "Person\nFamily / Guardian / Carer\nTeam Leader\nAccommodation Manager",
+      "reqd": 1
+    },
+    {
+      "fieldname": "name1",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "signature",
+      "fieldtype": "Data",
+      "label": "Signature"
+    },
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Hospital Support Completion Item",
+  "owner": "Administrator",
+  "permissions": []
+}

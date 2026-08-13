@@ -1,0 +1,34 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-08-04 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": ["staff_user", "role"],
+  "fields": [
+    {
+      "fieldname": "staff_user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Assigned Staff",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "default": "Primary Carer",
+      "fieldname": "role",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Staff Role / Responsibility",
+      "options": "Primary Carer\nSecondary Witness (2:1 Care)\nRegistered Nurse\nTherapist / Allied Health\nAgency Staff"
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-04 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Support Task Assigned Staff",
+  "owner": "Administrator",
+  "permissions": []
+}

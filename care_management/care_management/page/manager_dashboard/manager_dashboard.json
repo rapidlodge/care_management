@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2026-08-12 12:56:12.370711",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-08-12 13:05:36.051847",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "manager-dashboard",
+ "owner": "Administrator",
+ "page_name": "manager-dashboard",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Monitoring Dashboard"
+}

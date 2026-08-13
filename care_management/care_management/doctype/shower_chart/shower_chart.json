@@ -1,0 +1,68 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "SHOWER-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "week_starting_date",
+    "section_entries",
+    "shower_chart_items"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Participant Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "default": "Today",
+      "fieldname": "week_starting_date",
+      "fieldtype": "Date",
+      "label": "Week Starting Date"
+    },
+    {
+      "fieldname": "section_entries",
+      "fieldtype": "Section Break",
+      "label": "Weekly Personal Care / Shower Log"
+    },
+    {
+      "fieldname": "shower_chart_items",
+      "fieldtype": "Table",
+      "label": "Shower Chart Entries",
+      "options": "Shower Chart Item",
+      "reqd": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Shower Chart",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

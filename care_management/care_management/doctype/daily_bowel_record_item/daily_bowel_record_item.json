@@ -1,0 +1,92 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "time",
+    "stool_type",
+    "pains_or_distress",
+    "column_break_1",
+    "where_stool_passed",
+    "number_of_times_in_daily_period",
+    "aids_soiled_type_of_soiling",
+    "staff_signature"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "time",
+      "fieldtype": "Time",
+      "in_list_view": 1,
+      "label": "Time",
+      "reqd": 1
+    },
+    {
+      "fieldname": "stool_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Stool Type (Bristol Chart)",
+      "options": "Type 1 - Separate hard lumps\nType 2 - Lumpy and sausage-like\nType 3 - Sausage with cracks\nType 4 - Smooth, soft sausage\nType 5 - Soft blobs with clear edges\nType 6 - Fluffy pieces with ragged edges\nType 7 - Watery, no solid pieces",
+      "reqd": 1
+    },
+    {
+      "fieldname": "pains_or_distress",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Pains or distress when passing stool",
+      "options": "Yes\nNo",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "where_stool_passed",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Where was the stool passed",
+      "options": "Toilet\nAID\nOther",
+      "reqd": 1
+    },
+    {
+      "default": "1",
+      "fieldname": "number_of_times_in_daily_period",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Number of times in daily period",
+      "reqd": 1
+    },
+    {
+      "fieldname": "aids_soiled_type_of_soiling",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "AIDS-Soiled Type of Soiling",
+      "options": "Stained\nLoose\nSolid\nNone"
+    },
+    {
+      "fieldname": "staff_signature",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Staff Signature",
+      "options": "User",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Daily Bowel Record Item",
+  "owner": "Administrator",
+  "permissions": []
+}

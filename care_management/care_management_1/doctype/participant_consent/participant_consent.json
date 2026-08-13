@@ -1,0 +1,20 @@
+{
+ "doctype": "DocType",
+ "name": "Participant Consent",
+ "module": "Care Management",
+ "custom": 0,
+ "istable": 1,
+ "issingle": 0,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "consent_type",
+   "label": "Consent Type",
+   "fieldtype": "Link",
+   "options": "Consent Type",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "permissions": []
+}

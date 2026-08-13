@@ -1,0 +1,89 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "DRUG-CNT-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "webster_pak_type",
+    "column_break_1",
+    "prn_webster_details",
+    "schedule_8_details",
+    "section_entries",
+    "drug_count_entries"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Participant Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "fieldname": "webster_pak_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Webster Pak Type",
+      "options": "Regular Daily Webster\nPRN Webster\nSchedule 8 (S8)",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "depends_on": "eval:doc.webster_pak_type=='PRN Webster'",
+      "fieldname": "prn_webster_details",
+      "fieldtype": "Data",
+      "label": "PRN Webster Specification"
+    },
+    {
+      "depends_on": "eval:doc.webster_pak_type=='Schedule 8 (S8)'",
+      "fieldname": "schedule_8_details",
+      "fieldtype": "Data",
+      "label": "Schedule 8 (S8) Specification"
+    },
+    {
+      "fieldname": "section_entries",
+      "fieldtype": "Section Break",
+      "label": "Handover Drug Count Entries"
+    },
+    {
+      "fieldname": "drug_count_entries",
+      "fieldtype": "Table",
+      "label": "Handover Drug Counts",
+      "options": "Drug Count Entry",
+      "reqd": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Participant Drug Count",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

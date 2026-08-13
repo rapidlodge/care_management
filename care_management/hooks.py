@@ -1,7 +1,7 @@
 app_name = "care_management"
 app_title = "Care Management"
 app_publisher = "Hex Flow"
-app_description = "NDIS care management"
+app_description = "Care Management"
 app_email = "info@hexflow.com.au"
 app_license = "mit"
 
@@ -138,6 +138,33 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
+doc_events = {
+	"Weekly Meal Planner": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Appointment Schedule": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Daily Cleaning Task Checklist": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Daily Shift Task Checklist": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Falls Risk Plan": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Epilepsy Management Plan": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Hospital Support Plan": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+	"Medication Administration Log": {
+		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
+	},
+}
+
 # doc_events = {
 # 	"*": {
 # 		"on_update": "method",
@@ -145,6 +172,7 @@ app_license = "mit"
 # 		"on_trash": "method"
 # 	}
 # }
+# Document Event Hooks for Plan Auto-Sync
 
 # Scheduled Tasks
 # ---------------
@@ -256,3 +284,6 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+fixtures = [
+    {"dt": "Task Template"}
+]

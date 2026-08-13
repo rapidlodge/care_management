@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "creation": "2026-08-02 12:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "day",
+  "shift",
+  "type",
+  "hair_washed",
+  "column_break_1",
+  "comments",
+  "initial"
+ ],
+ "fields": [
+  {
+   "fieldname": "day",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Day",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday",
+   "reqd": 1
+  },
+  {
+   "fieldname": "shift",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Shift",
+   "options": "AM\nPM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type (Shower or Bath)",
+   "options": "Shower\nBath\nRefused\nNot Required"
+  },
+  {
+   "fieldname": "hair_washed",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Hair Washed",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "comments",
+   "fieldtype": "Small Text",
+   "label": "Comments"
+  },
+  {
+   "fieldname": "initial",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Initial",
+   "options": "User",
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-09 14:07:16.276247",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Shower Chart Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

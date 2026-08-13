@@ -1,0 +1,180 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "MFUP-.YYYY.-.####",
+ "creation": "2026-08-12 20:10:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "follow_up_section",
+  "execution_instance",
+  "support_task",
+  "participant",
+  "follow_up_details_section",
+  "follow_up_reason",
+  "priority",
+  "description",
+  "ownership_and_schedule_section",
+  "assigned_to",
+  "due_date",
+  "due_time",
+  "follow_up_status_section",
+  "status",
+  "resolution",
+  "resolved_on",
+  "resolved_by",
+  "manager_review_section",
+  "manager_notes",
+  "created_from_dashboard"
+ ],
+ "fields": [
+  {
+   "fieldname": "follow_up_section",
+   "fieldtype": "Section Break",
+   "label": "Follow-up"
+  },
+  {
+   "fieldname": "execution_instance",
+   "fieldtype": "Link",
+   "label": "Execution Instance",
+   "options": "Support Task Execution Instance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "support_task",
+   "fieldtype": "Link",
+   "label": "Support Task",
+   "options": "Support Task",
+   "read_only": 1
+  },
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "label": "Participant",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "follow_up_details_section",
+   "fieldtype": "Section Break",
+   "label": "Follow-up Details"
+  },
+  {
+   "fieldname": "follow_up_reason",
+   "fieldtype": "Select",
+   "label": "Follow-up Reason",
+   "options": "Missed Task\nParticipant Unavailable\nService Exception\nStaff Issue\nSafety Concern\nDocumentation Issue\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "Medium",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Follow-up Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ownership_and_schedule_section",
+   "fieldtype": "Section Break",
+   "label": "Ownership & Schedule"
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "due_time",
+   "fieldtype": "Time",
+   "label": "Due Time"
+  },
+  {
+   "fieldname": "follow_up_status_section",
+   "fieldtype": "Section Break",
+   "label": "Follow-up Status"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nIn Progress\nResolved\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resolution",
+   "fieldtype": "Small Text",
+   "label": "Resolution"
+  },
+  {
+   "fieldname": "resolved_on",
+   "fieldtype": "Datetime",
+   "label": "Resolved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Link",
+   "label": "Resolved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manager_review_section",
+   "fieldtype": "Section Break",
+   "label": "Manager Review"
+  },
+  {
+   "fieldname": "manager_notes",
+   "fieldtype": "Small Text",
+   "label": "Manager Notes"
+  },
+  {
+   "default": "0",
+   "fieldname": "created_from_dashboard",
+   "fieldtype": "Check",
+   "label": "Created From Dashboard",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-12 20:10:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Manager Follow-up",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_views": 1
+}

@@ -1,0 +1,68 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "day_of_month",
+    "am_hours_asleep",
+    "column_break_1",
+    "pm_hours_asleep",
+    "quality_of_sleep",
+    "notes"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "day_of_month",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Day of Month (1-31)",
+      "reqd": 1
+    },
+    {
+      "fieldname": "am_hours_asleep",
+      "fieldtype": "Float",
+      "in_list_view": 1,
+      "label": "AM Hours Asleep (Morning)"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "pm_hours_asleep",
+      "fieldtype": "Float",
+      "in_list_view": 1,
+      "label": "PM Hours Asleep (Evening)"
+    },
+    {
+      "fieldname": "quality_of_sleep",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Quality of Sleep (1-4)",
+      "options": "1 = VERY POOR\n2 = POOR\n3 = FAIR\n4 = GOOD",
+      "reqd": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Notes / Observations"
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Sleep Tracker Entry",
+  "owner": "Administrator",
+  "permissions": []
+}

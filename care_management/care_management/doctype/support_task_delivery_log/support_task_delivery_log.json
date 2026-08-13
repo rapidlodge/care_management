@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "TLOG-DEL-.YYYY.-.#####",
+ "creation": "2026-08-04 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "execution_instance",
+  "delivered_timestamp",
+  "primary_staff",
+  "delivery_notes",
+  "checked"
+ ],
+ "fields": [
+  {
+   "fieldname": "execution_instance",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Execution Instance",
+   "options": "Support Task Execution Instance",
+   "reqd": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "delivered_timestamp",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Delivery Timestamp",
+   "reqd": 1
+  },
+  {
+   "fieldname": "primary_staff",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Primary Staff",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_notes",
+   "fieldtype": "Small Text",
+   "label": "Delivery Notes / Outcome Details"
+  },
+  {
+   "default": "0",
+   "fieldname": "checked",
+   "fieldtype": "Check",
+   "label": "Checked"
+  }
+ ],
+ "links": [],
+ "modified": "2026-08-10 19:45:57.960496",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Support Task Delivery Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

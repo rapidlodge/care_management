@@ -1,0 +1,74 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "TLOG-MIS-.YYYY.-.#####",
+  "creation": "2026-08-04 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "execution_instance",
+    "missed_timestamp",
+    "logged_by_staff",
+    "reason_category",
+    "incident_escalated",
+    "omission_notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "execution_instance",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Execution Instance",
+      "options": "Support Task Execution Instance",
+      "reqd": 1
+    },
+    {
+      "default": "Now",
+      "fieldname": "missed_timestamp",
+      "fieldtype": "Datetime",
+      "in_list_view": 1,
+      "label": "Missed Timestamp",
+      "reqd": 1
+    },
+    {
+      "fieldname": "logged_by_staff",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Logged By Staff",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "reason_category",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Omission Reason Category",
+      "options": "Participant Refused\nParticipant Hospitalized / Absent\nStock / Medication Unavailable\nClinical Risk / Adverse Reaction\nStaff Shortage\nOther",
+      "reqd": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "incident_escalated",
+      "fieldtype": "Check",
+      "label": "Incident Report Triggered"
+    },
+    {
+      "fieldname": "omission_notes",
+      "fieldtype": "Small Text",
+      "label": "Omission Clinical Justification"
+    }
+  ],
+  "modified": "2026-08-04 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Support Task Missed Log",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "role": "System Manager"
+    }
+  ]
+}

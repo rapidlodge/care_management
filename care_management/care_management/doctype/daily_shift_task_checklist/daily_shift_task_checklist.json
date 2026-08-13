@@ -1,0 +1,69 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "SHIFT-TASK-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "week_commencing",
+    "section_entries",
+    "shift_tasks"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Participants Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "default": "Today",
+      "fieldname": "week_commencing",
+      "fieldtype": "Date",
+      "label": "Week Commencing",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_entries",
+      "fieldtype": "Section Break",
+      "label": "Daily Tasks To Be Completed On Shift"
+    },
+    {
+      "fieldname": "shift_tasks",
+      "fieldtype": "Table",
+      "label": "Shift Tasks",
+      "options": "Shift Task Item",
+      "reqd": 1
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Daily Shift Task Checklist",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

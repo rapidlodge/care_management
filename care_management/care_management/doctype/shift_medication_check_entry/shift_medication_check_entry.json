@@ -1,0 +1,77 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "prn_given_and_signed_today",
+    "medications_administered_and_signed_today",
+    "column_break_1",
+    "any_damage_to_medication_packs",
+    "medication_discrepancies_missing",
+    "staff_name_and_signature"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "default": "Yes",
+      "fieldname": "prn_given_and_signed_today",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "PRN Given & Signed for Today? (Yes/No)",
+      "options": "Yes\nNo",
+      "reqd": 1
+    },
+    {
+      "default": "Yes",
+      "fieldname": "medications_administered_and_signed_today",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Medications Administered & Signed for Today? (Yes/No)",
+      "options": "Yes\nNo",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "No",
+      "fieldname": "any_damage_to_medication_packs",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Any Damage to Medication Packs? (Yes/No)",
+      "options": "Yes\nNo",
+      "reqd": 1
+    },
+    {
+      "fieldname": "medication_discrepancies_missing",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "Medication Discrepancies / Missing"
+    },
+    {
+      "fieldname": "staff_name_and_signature",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Name & Signature of Staff",
+      "options": "User",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Shift Medication Check Entry",
+  "owner": "Administrator",
+  "permissions": []
+}

@@ -1,0 +1,624 @@
+{
+ "actions": [],
+ "autoname": "field:participant",
+ "creation": "2026-07-27 18:32:24.434489",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "sb_about_participant",
+  "legally_competent",
+  "cb_about_1",
+  "marital_status",
+  "living_arrangements",
+  "cb_about_2",
+  "religious_or_spiritual",
+  "religion",
+  "religious_or_cultural_needs",
+  "cb_about_3",
+  "cald",
+  "cb_about_4",
+  "atsi",
+  "sb_legal_consent",
+  "consent_received",
+  "organ_cadaver_donor",
+  "cb_legal_1",
+  "chap",
+  "peep",
+  "cb_legal_2",
+  "asthma_action_plan",
+  "ascia_action_plans",
+  "cb_legal_3",
+  "chap_review_date",
+  "peep_review_date",
+  "asthma_review_date",
+  "ascia_review_date",
+  "sb_risks_alerts",
+  "risk_or_alert_present",
+  "cb_risk_1",
+  "risk_or_alert",
+  "information_about_risk_or_alert",
+  "last_medication_review_date",
+  "sb_comm_supports",
+  "interpreter_required",
+  "cb_comm_1",
+  "english_ability",
+  "interpreter_language_required",
+  "cb_comm_2",
+  "communication_supports_required",
+  "communication_type",
+  "list_communication_supports",
+  "sb_medical_support",
+  "primary_disability",
+  "cb_medical_1",
+  "secondary_disability",
+  "list_other_disability",
+  "disability_limitations",
+  "cb_medical_2",
+  "ability_to_act_in_emergency",
+  "end_of_life_plan",
+  "cb_medical_3",
+  "date_of_last_elp_meeting",
+  "last_medication_review_date_medical",
+  "cb_medical_4",
+  "bsp_plan",
+  "approved_rp",
+  "cb_medical_5",
+  "bsp_plan_review_date",
+  "sb_agencies_refs",
+  "receive_mobility_allowance",
+  "cb_agencies_1",
+  "medicare_number",
+  "mygov_account",
+  "cb_agencies_2",
+  "crn_number",
+  "veteran_affairs_details",
+  "cb_agencies_3",
+  "private_health_care_cover",
+  "health_care_cover_details",
+  "companion_card",
+  "cb_agencies_4",
+  "funding_type",
+  "ndia_funding_type",
+  "plan_managed_details",
+  "support_agency",
+  "support_agency_further_details",
+  "my_aged_care_number",
+  "cb_agencies_5",
+  "pharmacist_name",
+  "pharmacist_contact_number"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Participant",
+   "options": "Customer",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_about_participant",
+   "fieldtype": "Section Break",
+   "label": "About the Participant"
+  },
+  {
+   "fieldname": "legally_competent",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Legally competent",
+   "options": "Yes\nNo\nPartial",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_about_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "marital_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Marital status",
+   "options": "Single\nMarried\nDe Facto\nDivorced\nWidowed\nSeparated",
+   "reqd": 1
+  },
+  {
+   "fieldname": "living_arrangements",
+   "fieldtype": "Table MultiSelect",
+   "label": "Living arrangements",
+   "options": "Participant Living Arrangement",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_about_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "religious_or_spiritual",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Religious or Spiritual",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "religion",
+   "fieldtype": "Select",
+   "label": "Religion",
+   "options": "\nChristianity\nIslam\nHinduism\nBuddhism\nJudaism\nSikhism\nNo Religion\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "religious_or_cultural_needs",
+   "fieldtype": "Small Text",
+   "label": "Religious or cultural needs"
+  },
+  {
+   "fieldname": "cb_about_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Culturally and Linguistically Diverse",
+   "fieldname": "cald",
+   "fieldtype": "Select",
+   "label": "CALD",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_about_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Aboriginal and/or Torres Strait Islander status \u2014 standard ABS category list",
+   "fieldname": "atsi",
+   "fieldtype": "Select",
+   "label": "ATSI",
+   "options": "Aboriginal\nTorres Strait Islander\nBoth Aboriginal and Torres Strait Islander\nNeither\nNot Stated",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_legal_consent",
+   "fieldtype": "Section Break",
+   "label": "Legal and Consent"
+  },
+  {
+   "fieldname": "consent_received",
+   "fieldtype": "Table MultiSelect",
+   "label": "Consent Received",
+   "options": "Participant Consent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_legal_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "organ_cadaver_donor",
+   "fieldtype": "Select",
+   "label": "Organ/Cadaver donor",
+   "options": "Yes\nNo\nUnknown",
+   "reqd": 1
+  },
+  {
+   "description": "Comprehensive Health Assessment Program",
+   "fieldname": "chap",
+   "fieldtype": "Select",
+   "label": "CHAP",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_legal_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.chap=='Yes'",
+   "fieldname": "chap_review_date",
+   "fieldtype": "Date",
+   "label": "CHAP Review Date"
+  },
+  {
+   "description": "Personal Emergency Evacuation Plan",
+   "fieldname": "peep",
+   "fieldtype": "Select",
+   "label": "PEEP",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_legal_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.peep=='Yes'",
+   "fieldname": "peep_review_date",
+   "fieldtype": "Date",
+   "label": "PEEP Review Date"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_risks_alerts",
+   "fieldtype": "Section Break",
+   "label": "Risks and Alerts"
+  },
+  {
+   "fieldname": "risk_or_alert_present",
+   "fieldtype": "Select",
+   "label": "Risk or alert present",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_risk_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.risk_or_alert_present=='Yes'",
+   "fieldname": "risk_or_alert",
+   "fieldtype": "Select",
+   "label": "Risk or Alert",
+   "mandatory_depends_on": "eval:doc.risk_or_alert_present=='Yes'",
+   "options": "\nBehavioural\nMedical\nEnvironmental\nSafety\nSelf-Harm\nOther",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.risk_or_alert_present=='Yes'",
+   "fieldname": "information_about_risk_or_alert",
+   "fieldtype": "Text",
+   "label": "Information about risk or alert"
+  },
+  {
+   "fieldname": "last_medication_review_date",
+   "fieldtype": "Date",
+   "label": "Last medication review date"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_comm_supports",
+   "fieldtype": "Section Break",
+   "label": "Communication Supports"
+  },
+  {
+   "fieldname": "interpreter_required",
+   "fieldtype": "Select",
+   "label": "Interpreter Required",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_comm_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "english_ability",
+   "fieldtype": "Select",
+   "label": "English Ability",
+   "options": "Native\nFluent\nConversational\nBasic\nNone",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.interpreter_required=='Yes'",
+   "fieldname": "interpreter_language_required",
+   "fieldtype": "Data",
+   "label": "Interpreter Language Required Specify",
+   "mandatory_depends_on": "eval:doc.interpreter_required=='Yes'"
+  },
+  {
+   "fieldname": "cb_comm_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "communication_supports_required",
+   "fieldtype": "Select",
+   "label": "Communication Supports",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "communication_type",
+   "fieldtype": "Select",
+   "label": "Communication type",
+   "options": "Verbal\nNon-Verbal\nAugmentative and Alternative Communication (AAC)\nAuslan/Sign Language\nPicture Exchange Communication System (PECS)\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "list_communication_supports",
+   "fieldtype": "Text",
+   "label": "List Communication Supports"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_medical_support",
+   "fieldtype": "Section Break",
+   "label": "Medical and Support Needs"
+  },
+  {
+   "fieldname": "primary_disability",
+   "fieldtype": "Select",
+   "label": "Primary Disability",
+   "options": "\nAutism\nIntellectual Disability\nPsychosocial Disability\nAcquired Brain Injury\nHearing Impairment\nVision Impairment\nPhysical Disability\nNeurological (excl. ABI)\nDevelopmental Delay\nMultiple Sclerosis\nStroke\nSpinal Cord Injury\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_medical_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "secondary_disability",
+   "fieldtype": "Table MultiSelect",
+   "label": "Secondary Disability",
+   "options": "Participant Secondary Disability",
+   "reqd": 1
+  },
+  {
+   "fieldname": "list_other_disability",
+   "fieldtype": "Text",
+   "label": "List Other Disability"
+  },
+  {
+   "fieldname": "disability_limitations",
+   "fieldtype": "Select",
+   "label": "Disability Limitations",
+   "options": "\nNone\nMild\nModerate\nSevere\nProfound",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_medical_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ability_to_act_in_emergency",
+   "fieldtype": "Select",
+   "label": "Ability to act in an emergency",
+   "options": "Yes\nNo\nPartial\nRequires Assistance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_of_life_plan",
+   "fieldtype": "Select",
+   "label": "End of Life Plan",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_medical_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.end_of_life_plan=='Yes'",
+   "fieldname": "date_of_last_elp_meeting",
+   "fieldtype": "Date",
+   "label": "Date of last ELP meeting"
+  },
+  {
+   "fieldname": "last_medication_review_date_medical",
+   "fieldtype": "Date",
+   "label": "Last medication review date"
+  },
+  {
+   "fieldname": "cb_medical_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Behaviour Support Plan",
+   "fieldname": "bsp_plan",
+   "fieldtype": "Select",
+   "label": "BSP Plan",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.bsp_plan=='Yes'",
+   "fieldname": "approved_rp",
+   "fieldtype": "Table MultiSelect",
+   "label": "Approved RP",
+   "options": "Participant Restrictive Practice"
+  },
+  {
+   "fieldname": "cb_medical_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.bsp_plan=='Yes'",
+   "fieldname": "bsp_plan_review_date",
+   "fieldtype": "Date",
+   "label": "BSP Plan Review Date"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sb_agencies_refs",
+   "fieldtype": "Section Break",
+   "label": "Agencies and Reference Numbers"
+  },
+  {
+   "fieldname": "receive_mobility_allowance",
+   "fieldtype": "Select",
+   "label": "Receive Mobility Allowance",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_agencies_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "10-11 digit Australian Medicare number",
+   "fieldname": "medicare_number",
+   "fieldtype": "Data",
+   "label": "Medicare Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mygov_account",
+   "fieldtype": "Data",
+   "label": "MyGov Account"
+  },
+  {
+   "fieldname": "cb_agencies_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Centrelink Reference Number",
+   "fieldname": "crn_number",
+   "fieldtype": "Data",
+   "label": "CRN Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "veteran_affairs_details",
+   "fieldtype": "Data",
+   "label": "Veteran Affairs Details"
+  },
+  {
+   "fieldname": "cb_agencies_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "private_health_care_cover",
+   "fieldtype": "Select",
+   "label": "Private Health Care Cover",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.private_health_care_cover=='Yes'",
+   "fieldname": "health_care_cover_details",
+   "fieldtype": "Text",
+   "label": "Health Care Cover Details"
+  },
+  {
+   "fieldname": "companion_card",
+   "fieldtype": "Select",
+   "label": "Companion Card",
+   "options": "Yes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb_agencies_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "funding_type",
+   "fieldtype": "Select",
+   "label": "Funding Type",
+   "options": "Aged Care\nPrivate\nOther",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.funding_type=='Aged Care'",
+   "fieldname": "ndia_funding_type",
+   "fieldtype": "Select",
+   "label": "NDIA Funding Type",
+   "options": "\nAgency Managed\nPlan Managed\nSelf Managed\nCombination",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.ndia_funding_type=='Plan Managed'",
+   "fieldname": "plan_managed_details",
+   "fieldtype": "Text",
+   "label": "Plan Managed details"
+  },
+  {
+   "fieldname": "support_agency",
+   "fieldtype": "Data",
+   "label": "Support Agency"
+  },
+  {
+   "fieldname": "support_agency_further_details",
+   "fieldtype": "Text",
+   "label": "Support Agency Further Details"
+  },
+  {
+   "fieldname": "my_aged_care_number",
+   "fieldtype": "Data",
+   "label": "My Aged Care Number"
+  },
+  {
+   "fieldname": "cb_agencies_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pharmacist_name",
+   "fieldtype": "Data",
+   "label": "Pharmacist Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pharmacist_contact_number",
+   "fieldtype": "Data",
+   "label": "Pharmacist Contact Number"
+  },
+  {
+   "description": "Asthma Management and First Aid Plan",
+   "fieldname": "asthma_action_plan",
+   "fieldtype": "Select",
+   "label": "Asthma Action Plan",
+   "options": "Yes\nNo\nN/A",
+   "reqd": 1
+  },
+  {
+   "description": "ASCIA Action Plans and First Aid Plan for Anaphylaxis",
+   "fieldname": "ascia_action_plans",
+   "fieldtype": "Select",
+   "label": "ASCIA Action Plans",
+   "options": "Yes\nNo\nN/A",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.peep=='Yes'",
+   "fieldname": "asthma_review_date",
+   "fieldtype": "Date",
+   "label": "Asthma Review Date"
+  },
+  {
+   "depends_on": "eval:doc.peep=='Yes'",
+   "fieldname": "ascia_review_date",
+   "fieldtype": "Date",
+   "label": "ASCIA Review Date"
+  }
+ ],
+ "links": [],
+ "modified": "2026-08-05 19:58:12.342875",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Participant Profile",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Care Manager",
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "role": "Support Coordinator",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "participant",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "participant",
+ "track_changes": 1
+}

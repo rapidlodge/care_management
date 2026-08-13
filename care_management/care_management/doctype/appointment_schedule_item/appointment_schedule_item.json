@@ -1,0 +1,69 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "medical_appointment",
+    "appointment_date",
+    "attended_date",
+    "column_break_1",
+    "next_appointment",
+    "medical_report_started",
+    "staff_name"
+  ],
+  "fields": [
+    {
+      "fieldname": "medical_appointment",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Medical Appointment",
+      "reqd": 1
+    },
+    {
+      "fieldname": "appointment_date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Appointment Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "attended_date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Attended Date"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "next_appointment",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Next Appointment"
+    },
+    {
+      "default": "0",
+      "fieldname": "medical_report_started",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "Medical Report Started"
+    },
+    {
+      "fieldname": "staff_name",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Staff Name",
+      "options": "User",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Appointment Schedule Item",
+  "owner": "Administrator",
+  "permissions": []
+}

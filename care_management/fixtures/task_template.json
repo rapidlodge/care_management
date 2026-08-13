@@ -1,0 +1,191 @@
+[
+  {
+    "doctype": "Task Template",
+    "task_name": "Showering and grooming",
+    "category": "1. Personal Care & Hygiene",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_011_0107_1_1",
+    "description_and_steps": "Assist participant in developing routines for showering, bathing, personal grooming, and maintaining cleanliness safely.",
+    "name": "Showering and grooming"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Toileting",
+    "category": "1. Personal Care & Hygiene",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_011_0107_1_1",
+    "description_and_steps": "Assistance and support with toileting, hygiene, and continent care.",
+    "name": "Toileting"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Dental hygiene",
+    "category": "1. Personal Care & Hygiene",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_011_0107_1_1",
+    "description_and_steps": "Prompting and assistance with tooth brushing and dental care routines.",
+    "name": "Dental hygiene"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Dressing appropriately",
+    "category": "1. Personal Care & Hygiene",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_011_0107_1_1",
+    "description_and_steps": "Assisting participant to select season-appropriate clothing and supporting them to dress independently.",
+    "name": "Dressing appropriately"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Planning meals",
+    "category": "2. Meal Preparation & Nutrition",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Weekly meal planning according to participant dietary requirements and budget.",
+    "name": "Planning meals"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Grocery shopping",
+    "category": "2. Meal Preparation & Nutrition",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Accompanying or supporting participant in grocery shopping and budget management at stores.",
+    "name": "Grocery shopping"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Safe use of kitchen appliances",
+    "category": "2. Meal Preparation & Nutrition",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Guiding participants on safety protocols when operating ovens, microwaves, stoves, and kitchen machinery.",
+    "name": "Safe use of kitchen appliances"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Basic cooking techniques",
+    "category": "2. Meal Preparation & Nutrition",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Teaching chop, boil, bake, and prepare simple nutritious meals.",
+    "name": "Basic cooking techniques"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Vacuuming, mopping, dusting",
+    "category": "3. Household Tasks & Cleaning",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_020_0120_1_1",
+    "description_and_steps": "Supporting household cleaning routines for physical and mental wellbeing.",
+    "name": "Vacuuming, mopping, dusting"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Dishwashing and laundry",
+    "category": "3. Household Tasks & Cleaning",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_020_0120_1_1",
+    "description_and_steps": "Assisting with washing dishes, loading dishwashers, doing laundry, folding, and ironing.",
+    "name": "Dishwashing and laundry"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Making the bed and organising storage",
+    "category": "3. Household Tasks & Cleaning",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_020_0120_1_1",
+    "description_and_steps": "Breaking down room organisation and bed making into manageable steps.",
+    "name": "Making the bed and organising storage"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Understand the value of money",
+    "category": "4. Money Management & Budgeting",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Coaching participant on money identification, change estimation, and spending awareness.",
+    "name": "Understand the value of money"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Budget for bills, groceries, and personal spending",
+    "category": "4. Money Management & Budgeting",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Structuring weekly/monthly budgets to cover essential utilities and leisure activities.",
+    "name": "Budget for bills, groceries, and personal spending"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Learn how to use ATMs or online banking",
+    "category": "4. Money Management & Budgeting",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Assisting with digital banking apps, PIN safety, and ATM withdrawals.",
+    "name": "Learn how to use ATMs or online banking"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Using phones and digital devices",
+    "category": "5. Communication & Social Skills",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Guiding participants to use smartphones, tablets, messaging apps, and email.",
+    "name": "Using phones and digital devices"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Practicing conversations & body language",
+    "category": "5. Communication & Social Skills",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Roleplaying social conversations, active listening, and reading body language/emotions.",
+    "name": "Practicing conversations & body language"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Attending community events",
+    "category": "5. Communication & Social Skills",
+    "support_category": "Core - Assistance with Social & Community Participation",
+    "default_item_code": "04_104_0125_6_1",
+    "description_and_steps": "Encouraging and accompanying participant to local social gatherings, clubs, and events.",
+    "name": "Attending community events"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Reading timetables & route planning",
+    "category": "6. Transport & Travel Training",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Teaching how to read public transport schedules and plan trip routes via mobile apps.",
+    "name": "Reading timetables & route planning"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Using public transport & road safety",
+    "category": "6. Transport & Travel Training",
+    "support_category": "Core - Transport",
+    "default_item_code": "02_051_0108_1_1",
+    "description_and_steps": "Practicing bus/train travel, purchasing tickets, tapping travel cards, and crossing roads safely.",
+    "name": "Using public transport & road safety"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Taking medications as prescribed",
+    "category": "7. Health & Medication Management",
+    "support_category": "Core - Assistance with Daily Life",
+    "default_item_code": "01_011_0107_1_1",
+    "description_and_steps": "Assisting or prompting participant to adhere to medical Webster packs and prescribed dosages.",
+    "name": "Taking medications as prescribed"
+  },
+  {
+    "doctype": "Task Template",
+    "task_name": "Healthcare routines & appointments",
+    "category": "7. Health & Medication Management",
+    "support_category": "Capacity Building - Improved Daily Living",
+    "default_item_code": "15_037_0117_1_3",
+    "description_and_steps": "Managing appointment calendars, GP visits, specialist consultations, and health reminders.",
+    "name": "Healthcare routines & appointments"
+  }
+]

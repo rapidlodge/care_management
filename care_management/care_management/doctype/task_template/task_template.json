@@ -1,0 +1,86 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:task_name",
+  "creation": "2026-07-28 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "task_name",
+    "category",
+    "column_break_1",
+    "support_category",
+    "default_item_code",
+    "section_break_1",
+    "description_and_steps"
+  ],
+  "fields": [
+    {
+      "fieldname": "task_name",
+      "fieldtype": "Data",
+      "label": "Task Name",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "category",
+      "fieldtype": "Select",
+      "label": "Category",
+      "options": "1. Personal Care & Hygiene\n2. Meal Preparation & Nutrition\n3. Household Tasks & Cleaning\n4. Money Management & Budgeting\n5. Communication & Social Skills\n6. Transport & Travel Training\n7. Health & Medication Management",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "support_category",
+      "fieldtype": "Select",
+      "label": "Support Category",
+      "options": "Core - Assistance with Daily Life\nCapacity Building - Improved Daily Living\nCore - Assistance with Social & Community Participation\nCore - Transport",
+      "reqd": 1
+    },
+    {
+      "fieldname": "default_item_code",
+      "fieldtype": "Data",
+      "label": "Default Line Item Code",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_break_1",
+      "fieldtype": "Section Break",
+      "label": "Guidelines & Instructions"
+    },
+    {
+      "fieldname": "description_and_steps",
+      "fieldtype": "Small Text",
+      "label": "Description and Steps"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-07-28 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Task Template",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

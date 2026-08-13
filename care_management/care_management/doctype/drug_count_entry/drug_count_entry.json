@@ -1,0 +1,87 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "date",
+    "staff_name",
+    "expected_count",
+    "actual_count",
+    "column_break_1",
+    "discrepancy",
+    "supported_amount_this_shift",
+    "actual_end_of_shift_count",
+    "staff_signature"
+  ],
+  "fields": [
+    {
+      "default": "Today",
+      "fieldname": "date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "staff_name",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Staff Name",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "expected_count",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Expected Count",
+      "reqd": 1
+    },
+    {
+      "fieldname": "actual_count",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Actual Count",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "NIL",
+      "fieldname": "discrepancy",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Discrepancy (NIL if none)"
+    },
+    {
+      "fieldname": "supported_amount_this_shift",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Supported Amount This Shift"
+    },
+    {
+      "fieldname": "actual_end_of_shift_count",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Actual End of Shift Count",
+      "reqd": 1
+    },
+    {
+      "fieldname": "staff_signature",
+      "fieldtype": "Link",
+      "label": "Staff Sign",
+      "options": "User",
+      "reqd": 1
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Drug Count Entry",
+  "owner": "Administrator",
+  "permissions": []
+}

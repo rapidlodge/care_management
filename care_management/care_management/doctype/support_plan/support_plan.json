@@ -1,0 +1,281 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PLAN-.YYYY.-.#####",
+ "creation": "2026-08-04 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "care_details_section",
+  "participant",
+  "plan_name",
+  "status",
+  "column_break_1",
+  "start_date",
+  "end_date",
+  "notes",
+  "source_document_section",
+  "medication_administration_log",
+  "appointment_schedule",
+  "weekly_meal_planner",
+  "skin_integrity_form",
+  "column_break_ptqr",
+  "hospital_support_plan",
+  "falls_risk_plan",
+  "epilepsy_management_plan",
+  "medical_report_summary",
+  "daily_food_diary",
+  "chart_tab",
+  "weekly_shower_log_section",
+  "shower_chart_entries",
+  "daily_bowel_chart_section",
+  "daily_bowel_record_entries",
+  "fluid_intake_output_chart_section",
+  "fluid_intake_output_entries",
+  "cleanig_chart_section",
+  "weekly_cleaning_entries",
+  "tracker_tab",
+  "seizure_tracker_section",
+  "seizure",
+  "mooed_tracker_section",
+  "mood_tracker_entry",
+  "sleep_tracker_section",
+  "sleep_tracker_entry",
+  "exercise_record_section",
+  "weekly_exercise_record"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant Profile",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Plan Name / Package",
+   "reqd": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nDraft\nArchived\nExpired"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Plan Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "Plan End Date"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Plan Objectives & Notes"
+  },
+  {
+   "fieldname": "source_document_section",
+   "fieldtype": "Section Break",
+   "label": "Source Document"
+  },
+  {
+   "fieldname": "medication_administration_log",
+   "fieldtype": "Link",
+   "label": "Medication Administration Log",
+   "options": "Medication Administration Log"
+  },
+  {
+   "fieldname": "appointment_schedule",
+   "fieldtype": "Link",
+   "label": "Appointment Schedule",
+   "options": "Appointment Schedule"
+  },
+  {
+   "fieldname": "weekly_meal_planner",
+   "fieldtype": "Link",
+   "label": "Weekly Meal Planner",
+   "options": "Weekly Meal Planner"
+  },
+  {
+   "fieldname": "skin_integrity_form",
+   "fieldtype": "Link",
+   "label": "Skin Integrity Form",
+   "options": "Skin Integrity Form"
+  },
+  {
+   "fieldname": "column_break_ptqr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hospital_support_plan",
+   "fieldtype": "Link",
+   "label": "Hospital Support Plan",
+   "options": "Hospital Support Plan"
+  },
+  {
+   "fieldname": "falls_risk_plan",
+   "fieldtype": "Link",
+   "label": "Falls Risk Plan",
+   "options": "Falls Risk Plan"
+  },
+  {
+   "fieldname": "epilepsy_management_plan",
+   "fieldtype": "Link",
+   "label": "Epilepsy Management Plan",
+   "options": "Epilepsy Management Plan"
+  },
+  {
+   "fieldname": "medical_report_summary",
+   "fieldtype": "Link",
+   "label": "Medical Report Summary",
+   "options": "Medical Report Summary"
+  },
+  {
+   "fieldname": "care_details_section",
+   "fieldtype": "Section Break",
+   "label": "Care Details"
+  },
+  {
+   "fieldname": "chart_tab",
+   "fieldtype": "Tab Break",
+   "label": "Chart"
+  },
+  {
+   "fieldname": "weekly_shower_log_section",
+   "fieldtype": "Section Break",
+   "label": "Weekly Shower Log"
+  },
+  {
+   "fieldname": "shower_chart_entries",
+   "fieldtype": "Table",
+   "label": "Shower Chart Entries",
+   "options": "Shower Chart Item"
+  },
+  {
+   "fieldname": "daily_bowel_chart_section",
+   "fieldtype": "Section Break",
+   "label": "Daily Bowel Chart"
+  },
+  {
+   "fieldname": "daily_bowel_record_entries",
+   "fieldtype": "Table",
+   "label": "Daily Bowel Record Entries",
+   "options": "Daily Bowel Record Item"
+  },
+  {
+   "fieldname": "fluid_intake_output_chart_section",
+   "fieldtype": "Section Break",
+   "label": "Fluid Intake Output Chart"
+  },
+  {
+   "fieldname": "fluid_intake_output_entries",
+   "fieldtype": "Table",
+   "label": "Fluid Intake Output Entries",
+   "options": "Fluid Intake Item"
+  },
+  {
+   "fieldname": "daily_food_diary",
+   "fieldtype": "Link",
+   "label": "Daily Food Diary",
+   "options": "Daily Food Diary"
+  },
+  {
+   "fieldname": "cleanig_chart_section",
+   "fieldtype": "Section Break",
+   "label": "Cleanig Chart"
+  },
+  {
+   "fieldname": "weekly_cleaning_entries",
+   "fieldtype": "Table",
+   "label": "Weekly Cleaning Entries",
+   "options": "Cleaning Task Item"
+  },
+  {
+   "fieldname": "tracker_tab",
+   "fieldtype": "Tab Break",
+   "label": "Tracker"
+  },
+  {
+   "fieldname": "seizure_tracker_section",
+   "fieldtype": "Section Break",
+   "label": "Seizure Tracker"
+  },
+  {
+   "fieldname": "seizure",
+   "fieldtype": "Table",
+   "label": "Seizure Chart Entry",
+   "options": "Seizure Chart Entry"
+  },
+  {
+   "fieldname": "sleep_tracker_section",
+   "fieldtype": "Section Break",
+   "label": "Sleep Tracker"
+  },
+  {
+   "fieldname": "sleep_tracker_entry",
+   "fieldtype": "Table",
+   "label": "Sleep Tracker Entry",
+   "options": "Sleep Tracker Entry"
+  },
+  {
+   "fieldname": "exercise_record_section",
+   "fieldtype": "Section Break",
+   "label": "Exercise Record"
+  },
+  {
+   "fieldname": "weekly_exercise_record",
+   "fieldtype": "Table",
+   "label": "Weekly Exercise Record",
+   "options": "Exercise Record Item"
+  },
+  {
+   "fieldname": "mood_tracker_entry",
+   "fieldtype": "Table",
+   "label": "Mood Tracker Entry",
+   "options": "Mood Tracker Entry"
+  },
+  {
+   "fieldname": "mooed_tracker_section",
+   "fieldtype": "Section Break",
+   "label": "Mood Tracker"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-09 17:33:14.525627",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Support Plan",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,6 +1,6 @@
 ### Care Management
 
-NDIS care management
+Care Management
 
 ### Installation
 

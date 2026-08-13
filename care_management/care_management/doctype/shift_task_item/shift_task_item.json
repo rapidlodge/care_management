@@ -1,0 +1,95 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "shift",
+    "task_description",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "column_break_1",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ],
+  "fields": [
+    {
+      "fieldname": "shift",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Shift",
+      "options": "Day Shift\nNight Shift",
+      "reqd": 1
+    },
+    {
+      "fieldname": "task_description",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Task Description",
+      "reqd": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "monday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "MON"
+    },
+    {
+      "default": "0",
+      "fieldname": "tuesday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "TUE"
+    },
+    {
+      "default": "0",
+      "fieldname": "wednesday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "WED"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "0",
+      "fieldname": "thursday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "THU"
+    },
+    {
+      "default": "0",
+      "fieldname": "friday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "FRI"
+    },
+    {
+      "default": "0",
+      "fieldname": "saturday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "SAT"
+    },
+    {
+      "default": "0",
+      "fieldname": "sunday",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "SUN"
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Shift Task Item",
+  "owner": "Administrator",
+  "permissions": []
+}

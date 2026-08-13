@@ -1,0 +1,132 @@
+{
+  "creation": "2026-08-08 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "medication_name",
+    "dosage",
+    "route",
+    "column_break_1",
+    "time_slot",
+    "is_prn",
+    "section_days",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "column_break_2",
+    "friday",
+    "saturday",
+    "sunday",
+    "section_notes",
+    "instructions"
+  ],
+  "fields": [
+    {
+      "fieldname": "medication_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Medication Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "dosage",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Dosage"
+    },
+    {
+      "fieldname": "route",
+      "fieldtype": "Select",
+      "label": "Route",
+      "options": "Oral\nTopical\nInjection\nInhaled\nOther"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "time_slot",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Timeframe Slot",
+      "options": "6 AM\n8 AM\n12 PM (Lunch)\n6 PM (Dinner)\n8 PM (Bedtime)",
+      "reqd": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "is_prn",
+      "fieldtype": "Check",
+      "label": "PRN / As Needed (not auto-scheduled)"
+    },
+    {
+      "fieldname": "section_days",
+      "fieldtype": "Section Break",
+      "label": "Days Administered"
+    },
+    {
+      "default": "1",
+      "fieldname": "monday",
+      "fieldtype": "Check",
+      "label": "Monday"
+    },
+    {
+      "default": "1",
+      "fieldname": "tuesday",
+      "fieldtype": "Check",
+      "label": "Tuesday"
+    },
+    {
+      "default": "1",
+      "fieldname": "wednesday",
+      "fieldtype": "Check",
+      "label": "Wednesday"
+    },
+    {
+      "default": "1",
+      "fieldname": "thursday",
+      "fieldtype": "Check",
+      "label": "Thursday"
+    },
+    {
+      "fieldname": "column_break_2",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "1",
+      "fieldname": "friday",
+      "fieldtype": "Check",
+      "label": "Friday"
+    },
+    {
+      "default": "1",
+      "fieldname": "saturday",
+      "fieldtype": "Check",
+      "label": "Saturday"
+    },
+    {
+      "default": "1",
+      "fieldname": "sunday",
+      "fieldtype": "Check",
+      "label": "Sunday"
+    },
+    {
+      "fieldname": "section_notes",
+      "fieldtype": "Section Break",
+      "label": "Administration Instructions"
+    },
+    {
+      "fieldname": "instructions",
+      "fieldtype": "Small Text",
+      "label": "Instructions"
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-08 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Medication Plan Item",
+  "owner": "Administrator",
+  "permissions": []
+}

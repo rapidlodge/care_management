@@ -1,0 +1,47 @@
+{
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "role",
+    "name1",
+    "position",
+    "mobile"
+  ],
+  "fields": [
+    {
+      "fieldname": "role",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Role",
+      "reqd": 1
+    },
+    {
+      "fieldname": "name1",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "position",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Position"
+    },
+    {
+      "fieldname": "mobile",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Mobile"
+    }
+  ],
+  "istable": 1,
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Hospital Provider Contact Item",
+  "owner": "Administrator",
+  "permissions": []
+}

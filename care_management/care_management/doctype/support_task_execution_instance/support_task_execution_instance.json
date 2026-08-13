@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "EXEC-.YYYY.-.#####",
+ "creation": "2026-08-04 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "support_task",
+  "scheduled_date",
+  "scheduled_time",
+  "status",
+  "column_break_1",
+  "is_floating",
+  "executed_by",
+  "actual_execution_time",
+  "section_outcome",
+  "outcome",
+  "exception_type",
+  "follow_up_required",
+  "execution_notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "support_task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Support Task",
+   "options": "Support Task",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Scheduled Date",
+   "reqd": 1
+  },
+  {
+   "default": "06:00:00",
+   "fieldname": "scheduled_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Scheduled Time",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Execution Status",
+   "options": "Pending\nIn Progress\nDelivered\nPartially Completed\nRefused / Declined\nNot Applicable\nMissed\nCancelled\nOverdue",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_floating",
+   "fieldtype": "Check",
+   "label": "Floating Task"
+  },
+  {
+   "fieldname": "executed_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Executed By",
+   "options": "User"
+  },
+  {
+   "fieldname": "actual_execution_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Actual Execution Time"
+  },
+  {
+   "fieldname": "section_outcome",
+   "fieldtype": "Section Break",
+   "label": "Execution Outcome"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "\nCompleted\nPartially Completed\nRefused / Declined\nNot Applicable\nMissed\nCancelled"
+  },
+  {
+   "fieldname": "exception_type",
+   "fieldtype": "Select",
+   "label": "Exception Type",
+   "options": "\nParticipant Unavailable\nParticipant Refused\nStaff Unavailable\nUnable to Complete\nSafety Concern\nClinical Concern\nEnvironmental Issue\nOther"
+  },
+  {
+   "default": "0",
+   "fieldname": "follow_up_required",
+   "fieldtype": "Check",
+   "label": "Follow-up Required"
+  },
+  {
+   "fieldname": "execution_notes",
+   "fieldtype": "Small Text",
+   "label": "Execution Notes / Outcome Details"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-10 19:27:23.019645",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Support Task Execution Instance",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

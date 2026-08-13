@@ -1,0 +1,221 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "EPI-.YYYY.-.#####",
+  "creation": "2026-08-02 12:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "participant",
+    "date_of_birth",
+    "address",
+    "diagnosis",
+    "column_break_1",
+    "plan_last_reviewed",
+    "plan_review_date",
+    "section_neurologist",
+    "neurologist_name",
+    "neurologist_address",
+    "neurologist_phone",
+    "neurologist_email",
+    "section_gp",
+    "gp_name",
+    "gp_address",
+    "gp_phone",
+    "gp_email",
+    "section_seizures_info",
+    "other_medical_conditions",
+    "other_important_information",
+    "emergency_medication_prescribed",
+    "emergency_medication_location",
+    "section_triggers",
+    "seizures_triggered_by",
+    "behavior_changes_before_seizure",
+    "seizure_support",
+    "risk_safety_alerts_description",
+    "section_risk_reduction",
+    "risk_reduction_items"
+  ],
+  "fields": [
+    {
+      "fieldname": "participant",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Name",
+      "options": "Participant Profile",
+      "reqd": 1
+    },
+    {
+      "fetch_from": "participant.date_of_birth",
+      "fieldname": "date_of_birth",
+      "fieldtype": "Date",
+      "label": "DOB",
+      "read_only": 1
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "diagnosis",
+      "fieldtype": "Small Text",
+      "label": "Diagnosis"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "plan_last_reviewed",
+      "fieldtype": "Date",
+      "label": "Plan Last Reviewed"
+    },
+    {
+      "fieldname": "plan_review_date",
+      "fieldtype": "Date",
+      "label": "Plan Review Date"
+    },
+    {
+      "fieldname": "section_neurologist",
+      "fieldtype": "Section Break",
+      "label": "Neurologist"
+    },
+    {
+      "fieldname": "neurologist_name",
+      "fieldtype": "Data",
+      "label": "Neurologist Name"
+    },
+    {
+      "fieldname": "neurologist_address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "neurologist_phone",
+      "fieldtype": "Data",
+      "label": "Ph"
+    },
+    {
+      "fieldname": "neurologist_email",
+      "fieldtype": "Data",
+      "label": "Email"
+    },
+    {
+      "fieldname": "section_gp",
+      "fieldtype": "Section Break",
+      "label": "GP"
+    },
+    {
+      "fieldname": "gp_name",
+      "fieldtype": "Data",
+      "label": "GP Name"
+    },
+    {
+      "fieldname": "gp_address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "gp_phone",
+      "fieldtype": "Data",
+      "label": "Ph"
+    },
+    {
+      "fieldname": "gp_email",
+      "fieldtype": "Data",
+      "label": "Email"
+    },
+    {
+      "fieldname": "section_seizures_info",
+      "fieldtype": "Section Break",
+      "label": "Information About Seizures"
+    },
+    {
+      "fieldname": "other_medical_conditions",
+      "fieldtype": "Small Text",
+      "label": "Other medical conditions"
+    },
+    {
+      "fieldname": "other_important_information",
+      "fieldtype": "Small Text",
+      "label": "Other important information that might assist someone helping"
+    },
+    {
+      "default": "No",
+      "fieldname": "emergency_medication_prescribed",
+      "fieldtype": "Select",
+      "label": "Has emergency epilepsy medication been prescribed?",
+      "options": "Yes\nNo"
+    },
+    {
+      "depends_on": "eval:doc.emergency_medication_prescribed=='Yes'",
+      "fieldname": "emergency_medication_location",
+      "fieldtype": "Data",
+      "label": "Where is the emergency medication located?"
+    },
+    {
+      "fieldname": "section_triggers",
+      "fieldtype": "Section Break",
+      "label": "Triggers, Support & Risk Alerts"
+    },
+    {
+      "default": "no known triggers",
+      "fieldname": "seizures_triggered_by",
+      "fieldtype": "Small Text",
+      "label": "Seizures are triggered by"
+    },
+    {
+      "fieldname": "behavior_changes_before_seizure",
+      "fieldtype": "Small Text",
+      "label": "Changes in behavior that may indicate a seizure could occur"
+    },
+    {
+      "fieldname": "seizure_support",
+      "fieldtype": "Small Text",
+      "label": "Seizure support"
+    },
+    {
+      "fieldname": "risk_safety_alerts_description",
+      "fieldtype": "Small Text",
+      "label": "Risk / Safety Alerts Overview"
+    },
+    {
+      "fieldname": "section_risk_reduction",
+      "fieldtype": "Section Break",
+      "label": "Risk Reduction Plan"
+    },
+    {
+      "fieldname": "risk_reduction_items",
+      "fieldtype": "Table",
+      "label": "Risk Reduction Entries",
+      "options": "Epilepsy Risk Reduction Item"
+    }
+  ],
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2026-08-02 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Epilepsy Management Plan",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}
