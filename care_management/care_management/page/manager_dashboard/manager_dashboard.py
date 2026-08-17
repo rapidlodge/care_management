@@ -5,7 +5,8 @@ import frappe
 def get_manager_dashboard_data(
     start_date=None,
     end_date=None,
-    status=None
+    status=None,
+    participant=None
 ):
     """
     Manager Dashboard KPI and review data.
@@ -38,7 +39,8 @@ def get_manager_dashboard_data(
     reviews = get_manager_review_tasks(
         start_date=start_date,
         end_date=end_date,
-        status=status
+        status=status,
+        participant=participant
     )
 
 
@@ -54,12 +56,14 @@ def get_manager_dashboard_data(
     )
     attention_items = get_manager_attention_items(
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        participant=participant
     )
     follow_up_items = get_manager_attention_items(
         start_date=start_date,
         end_date=end_date,
-        attention_type="follow_up"
+        attention_type="follow_up",
+        participant=participant
     )
 
     return {
@@ -1019,7 +1023,8 @@ def get_manager_attention_items(
     start_date=None,
     end_date=None,
     attention_type=None,
-    limit=50
+    limit=50,
+    participant=None
 ):
     """
     Return execution records requiring manager attention.
@@ -1034,6 +1039,11 @@ def get_manager_attention_items(
         exception
 
     This remains a derived view. No new DocType is introduced.
+
+    `participant` is an optional Participant Profile filter applied
+    through the existing backend query architecture (Change 1 —
+    Manager Dashboard Participant Filter). Leaving it empty preserves
+    the exact existing behaviour.
     """
 
     if not start_date:
@@ -1096,7 +1106,8 @@ def get_manager_attention_items(
 
     reviews = get_manager_review_tasks(
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        participant=participant
     )
 
     reviews = reviews or []
@@ -1270,7 +1281,8 @@ def get_manager_review_tasks(
     start_date=None,
     end_date=None,
     status=None,
-    follow_up_required=None
+    follow_up_required=None,
+    participant=None
 ):
     """
     Use the existing Manager Review implementation from the
@@ -1279,6 +1291,10 @@ def get_manager_review_tasks(
     We deliberately reuse the existing business logic so that
     Manager Dashboard and Support Task Schedule do not develop
     different interpretations of task execution.
+
+    `participant` is forwarded straight through to the existing
+    Support Task Schedule query, which already applies it as a
+    `sp.participant = %(participant)s` SQL condition (Change 1).
     """
 
     from care_management.care_management.page.support_task_schedule import (
@@ -1292,6 +1308,7 @@ def get_manager_review_tasks(
             start_date=start_date,
             end_date=end_date,
             status=status,
-            follow_up_required=follow_up_required
+            follow_up_required=follow_up_required,
+            participant=participant
         )
     )
