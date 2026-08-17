@@ -151,98 +151,53 @@ def get_execution_review_detail(
     # present on the execution DocType.
     # ------------------------------------------------------------
 
+    task = frappe.get_doc(
+		"Support Task",
+		execution.support_task
+	)
+
+    participant = frappe.db.get_value(
+		"Support Plan",
+		task.support_plan,
+		"participant"
+	)
+
+    assigned_staff = frappe.get_all(
+		"Support Task Assigned Staff",
+		filters={
+			"parent": task.name,
+			"parenttype": "Support Task",
+		},
+		fields=[
+			"staff_user",
+			"role",
+			"idx",
+		],
+		order_by="idx asc",
+	)
+
     return {
-
-        "execution_instance":
-            execution.name,
-
-        "support_task":
-            getattr(
-                execution,
-                "support_task",
-                None
-            ),
-
-        "participant":
-            getattr(
-                execution,
-                "participant",
-                None
-            ),
-
-        "task_name":
-            getattr(
-                execution,
-                "task_name",
-                None
-            ),
-
-        "scheduled_date":
-            getattr(
-                execution,
-                "scheduled_date",
-                None
-            ),
-
-        "scheduled_time":
-            getattr(
-                execution,
-                "scheduled_time",
-                None
-            ),
-
-        "status":
-            getattr(
-                execution,
-                "status",
-                None
-            ),
-
-        "exception_type":
-            getattr(
-                execution,
-                "exception_type",
-                None
-            ),
-
-        "follow_up_required":
-            1
-            if getattr(
-                execution,
-                "follow_up_required",
-                0
-            )
-            else 0,
-
-        "execution_notes":
-            getattr(
-                execution,
-                "execution_notes",
-                None
-            ),
-
-        "notes":
-            getattr(
-                execution,
-                "execution_notes",
-                None
-            ),
-
-        "staff":
-            getattr(
-                execution,
-                "staff",
-                None
-            ),
-
-        "assigned_staff":
-            getattr(
-                execution,
-                "assigned_staff",
-                None
-            )
-
-    }
+		"execution_instance": execution.name,
+		"support_task": task.name,
+		"support_plan": task.support_plan,
+		"participant": participant,
+		"task_name": task.task_name,
+		"task_category": task.task_category,
+		"clinical_priority": task.clinical_priority,
+		"source_doctype": task.source_doctype,
+		"source_docname": task.source_docname,
+		"source_row_id": task.source_row_id,
+		"assigned_staff": assigned_staff,
+		"scheduled_date": execution.scheduled_date,
+		"scheduled_time": execution.scheduled_time,
+		"status": execution.status,
+		"outcome": execution.outcome,
+		"exception_type": execution.exception_type,
+		"follow_up_required": execution.follow_up_required,
+		"executed_by": execution.executed_by,
+		"actual_execution_time": execution.actual_execution_time,
+		"execution_notes": execution.execution_notes,
+	}
 
 
 # ================================================================
@@ -455,6 +410,15 @@ def create_manager_follow_up(
             "Execution Instance is required."
         )
 
+    execution_instance = str(
+        execution_instance
+    ).strip()
+
+    if not execution_instance:
+        frappe.throw(
+            "Execution Instance is required."
+        )
+
     if not frappe.db.exists(
         "Support Task Execution Instance",
         execution_instance
@@ -475,7 +439,16 @@ def create_manager_follow_up(
         "Support Task Execution Instance",
         execution_instance
     )
+    support_task = frappe.get_doc(
+        "Support Task",
+        execution.support_task
+    )
 
+    participant = frappe.db.get_value(
+        "Support Plan",
+        support_task.support_plan,
+        "participant"
+    )
     if not getattr(
         execution,
         "follow_up_required",
@@ -551,7 +524,16 @@ def create_manager_follow_up(
     # ------------------------------------------------------------
     # Create Manager Follow-up.
     # ------------------------------------------------------------
+    task = frappe.get_doc(
+        "Support Task",
+        execution.support_task
+    )
 
+    participant = frappe.db.get_value(
+        "Support Plan",
+        task.support_plan,
+        "participant"
+    )
     follow_up = frappe.get_doc({
         "doctype":
             "Manager Follow-up",
@@ -560,18 +542,10 @@ def create_manager_follow_up(
             execution.name,
 
         "support_task":
-            getattr(
-                execution,
-                "support_task",
-                None
-            ),
+            execution.support_task,
 
         "participant":
-            getattr(
-                execution,
-                "participant",
-                None
-            ),
+            participant,
 
         "follow_up_reason":
             follow_up_reason,
@@ -639,152 +613,152 @@ def create_manager_follow_up(
 
 @frappe.whitelist()
 def get_manager_follow_ups(
-    status=None,
-    start_date=None,
-    end_date=None,
-    assigned_to=None,
-    participant=None,
-    limit=50
+	status=None,
+	start_date=None,
+	end_date=None,
+	assigned_to=None,
+	participant=None,
+	limit=50
 ):
-    """
-    Return active Manager Follow-up records for the
-    Manager Dashboard.
+	"""
+	Return active Manager Follow-up records for the Manager Dashboard.
 
-    Only Open and In Progress follow-ups are returned
-    by default.
+	Only Open and In Progress follow-ups are returned by default.
+	Supports filtering by participant and assigned staff cleanly.
 
-    Frappe v16 compatible.
-    """
+	Frappe v16 compatible.
+	"""
 
-    if not frappe.has_permission(
-        "Manager Follow-up",
-        "read"
-    ):
-        frappe.throw(
-            "You do not have permission to view Manager Follow-ups."
-        )
+	if not frappe.has_permission(
+		"Manager Follow-up",
+		"read"
+	):
+		frappe.throw(
+			"You do not have permission to view Manager Follow-ups."
+		)
 
-    # ------------------------------------------------------------
-    # Safe limit
-    # ------------------------------------------------------------
+	# ------------------------------------------------------------
+	# Safe limit
+	# ------------------------------------------------------------
 
-    try:
-        limit = int(limit)
-    except (TypeError, ValueError):
-        limit = 50
+	try:
+		limit = int(limit)
+	except (TypeError, ValueError):
+		limit = 50
 
-    limit = max(
-        1,
-        min(
-            limit,
-            100
-        )
-    )
+	limit = max(
+		1,
+		min(
+			limit,
+			100
+		)
+	)
 
-    # ------------------------------------------------------------
-    # Status
-    # ------------------------------------------------------------
+	# ------------------------------------------------------------
+	# Status
+	# ------------------------------------------------------------
 
-    if status:
+	if status and str(status).strip():
 
-        allowed_statuses = {
-            "Open",
-            "In Progress",
-            "Resolved",
-            "Cancelled"
-        }
+		allowed_statuses = {
+			"Open",
+			"In Progress",
+			"Resolved",
+			"Cancelled"
+		}
 
-        if status not in allowed_statuses:
-            frappe.throw(
-                "Invalid follow-up status."
-            )
+		if status not in allowed_statuses:
+			frappe.throw(
+				"Invalid follow-up status."
+			)
 
-        status_filter = status
+		status_filter = status
 
-    else:
+	else:
 
-        status_filter = [
-            "in",
-            [
-                "Open",
-                "In Progress"
-            ]
-        ]
+		status_filter = [
+			"in",
+			[
+				"Open",
+				"In Progress"
+			]
+		]
 
-    # ------------------------------------------------------------
-    # Filters
-    # ------------------------------------------------------------
+	# ------------------------------------------------------------
+	# Filters
+	# ------------------------------------------------------------
 
-    filters = {
-        "status": status_filter
-    }
+	filters = {
+		"status": status_filter
+	}
 
-    if assigned_to:
-        filters["assigned_to"] = assigned_to
+	# Clean string parameters passed from front-end filters
+	if assigned_to and str(assigned_to).strip():
+		filters["assigned_to"] = str(assigned_to).strip()
 
-    if participant:
-        filters["participant"] = participant
+	if participant and str(participant).strip():
+		filters["participant"] = str(participant).strip()
 
-    if start_date and end_date:
+	if start_date and end_date:
 
-        filters["due_date"] = [
-            "between",
-            [
-                start_date,
-                end_date
-            ]
-        ]
+		filters["due_date"] = [
+			"between",
+			[
+				start_date,
+				end_date
+			]
+		]
 
-    elif start_date:
+	elif start_date:
 
-        filters["due_date"] = [
-            ">=",
-            start_date
-        ]
+		filters["due_date"] = [
+			">=",
+			start_date
+		]
 
-    elif end_date:
+	elif end_date:
 
-        filters["due_date"] = [
-            "<=",
-            end_date
-        ]
+		filters["due_date"] = [
+			"<=",
+			end_date
+		]
 
-    # ------------------------------------------------------------
-    # Query
-    # ------------------------------------------------------------
+	# ------------------------------------------------------------
+	# Query (Frappe v16 safe ordering without FIELD())
+	# ------------------------------------------------------------
 
-    return frappe.get_all(
-        "Manager Follow-up",
+	return frappe.get_all(
+		"Manager Follow-up",
 
-        filters=filters,
+		filters=filters,
 
-        fields=[
-            "name",
-            "execution_instance",
-            "support_task",
-            "participant",
-            "follow_up_reason",
-            "priority",
-            "description",
-            "assigned_to",
-            "due_date",
-            "due_time",
-            "status",
-            "resolution",
-            "resolved_on",
-            "resolved_by",
-            "manager_notes",
-            "created_from_dashboard"
-        ],
+		fields=[
+			"name",
+			"execution_instance",
+			"support_task",
+			"participant",
+			"follow_up_reason",
+			"priority",
+			"description",
+			"assigned_to",
+			"due_date",
+			"due_time",
+			"status",
+			"resolution",
+			"resolved_on",
+			"resolved_by",
+			"manager_notes",
+			"created_from_dashboard"
+		],
 
-        order_by="""
-            due_date asc,
-            due_time asc,
-            modified desc
-        """,
+		order_by="""
+			due_date asc,
+			due_time asc,
+			modified desc
+		""",
 
-        limit_page_length=limit
-    )
+		limit_page_length=limit
+	)
 
 @frappe.whitelist()
 def update_manager_follow_up(

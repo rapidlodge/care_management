@@ -1068,7 +1068,37 @@ class SupportTaskScheduler {
 
             }
         );
+        $(document).on(
+            'click',
+            '.staff-plan-view-btn',
+            function() {
+                const doctype = $(this).attr('data-doctype');
+                const name = $(this).attr('data-name');
 
+                if (!doctype || !name) {
+                    frappe.msgprint('Source plan information is unavailable.');
+                    return;
+                }
+
+                frappe.set_route('Form', doctype, name);
+            }
+        );
+
+        $(document).on(
+            'click',
+            '.critical-care-plan-btn',
+            function() {
+                const doctype = $(this).attr('data-doctype');
+                const name = $(this).attr('data-name');
+
+                if (!doctype || !name) {
+                    frappe.msgprint('Care plan information is unavailable.');
+                    return;
+                }
+
+                frappe.set_route('Form', doctype, name);
+            }
+        );
         // ============================================================
         // PHASE 3B - MANAGER REVIEW
         // ============================================================
@@ -2434,144 +2464,434 @@ class SupportTaskScheduler {
     // TASK INSPECTOR
     // ================================================================
 
-    load_inspector_details(
-        task_id
-    ) {
+    // ================================================================
+    // TASK INSPECTOR
+    // ================================================================
+
+    // ================================================================
+    // TASK INSPECTOR
+    // ================================================================
+
+    load_inspector_details(task_id) {
+        const me = this;
+
+        $('#panel-left-details').html(`
+            <div style="padding: 12px; text-align: center;">
+                <i class="fa fa-spinner fa-spin"></i>
+                Loading task context...
+            </div>
+        `);
 
         frappe.call({
-
             method:
-                'frappe.client.get',
+                'care_management.care_management.page.support_task_schedule.support_task_schedule.get_staff_task_context',
 
             args: {
-
-                doctype:
-                    'Support Task',
-
-                name:
-                    task_id
-
+                task_id: task_id
             },
 
+            callback: function(r) {
 
-            callback:
-                function(r) {
-
-                    let doc =
-                        r.message;
-
-
-                    if (!doc) {
-
-                        return;
-
-                    }
-
-
-                    $('#inspector-title').text(
-
-                        `Selected:
-                        ${doc.task_name || ''}`
-
-                    );
-
-
-                    let details_html = `
-
-                        <h6
-                            style="
-                                margin-top: 0;
-                                color: #1864ab;
-                            "
-                        >
-                            Task Overview
-                        </h6>
-
-
-                        <p
-                            style="
-                                margin: 3px 0;
-                                font-size: 12px;
-                            "
-                        >
-
-                            <strong>
-                                Task Name:
-                            </strong>
-
-                            ${doc.task_name || ''}
-
-                        </p>
-
-
-                        <p
-                            style="
-                                margin: 3px 0;
-                                font-size: 12px;
-                            "
-                        >
-
-                            <strong>
-                                Priority:
-                            </strong>
-
-                            ${doc.clinical_priority || ''}
-
-                            |
-
-                            <strong>
-                                Category:
-                            </strong>
-
-                            ${doc.task_category || ''}
-
-                        </p>
-
-
-                        <p
-                            style="
-                                margin: 3px 0;
-                                font-size: 12px;
-                            "
-                        >
-
-                            <strong>
-                                Description:
-                            </strong>
-
-                            ${doc.description || 'None'}
-
-                        </p>
-
-
-                        <p
-                            style="
-                                margin: 3px 0;
-                                font-size: 12px;
-                            "
-                        >
-
-                            <strong>
-                                Staff Count Required:
-                            </strong>
-
-                            ${doc.staff_count_required || 0}
-
-                        </p>
-
-                    `;
-
-
-                    $('#panel-left-details')
-                        .html(
-                            details_html
-                        );
-
+                if (r.exc) {
+                    $('#panel-left-details').html(`
+                        <div class="text-danger" style="padding: 12px;">
+                            Unable to load task context.
+                        </div>
+                    `);
+                    return;
                 }
 
+                const context = r.message || {};
+                const task = context.task || {};
+                const participant = context.participant || {};
+                const support_plan = context.support_plan || {};
+                const plans = context.plans || [];
+                const assigned_staff = context.assigned_staff || [];
+
+                // Helper for safe HTML rendering
+                const safe = (text) => frappe.utils.escape_html(text || '');
+
+                // ------------------------------------------------------------
+                // 1. SOURCE PLAN CONTEXT
+                // ------------------------------------------------------------
+                let plans_html = '';
+                const source = context.source || {};
+
+                if (source.doctype && source.name) {
+                    const source_label = safe(source.label || source.doctype);
+                    const source_doctype = safe(source.doctype);
+                    const source_name = safe(source.name);
+
+                    plans_html += `
+                        <button
+                            class="btn btn-sm btn-default staff-plan-view-btn"
+                            data-doctype="${source_doctype}"
+                            data-name="${source_name}"
+                            style="
+                                width:100%;
+                                text-align:left;
+                                margin-bottom:6px;
+                            "
+                        >
+                            <i class="fa fa-file-text-o"></i>
+                            ${source_label}
+
+                            <span style="
+                                float:right;
+                                color:#868e96;
+                            ">
+                                View
+                            </span>
+                        </button>
+                    `;
+                }
+
+                if (!plans_html) {
+                    plans_html = `
+                        <div style="
+                            padding:10px;
+                            border:1px dashed #ced4da;
+                            border-radius:5px;
+                            color:#868e96;
+                        ">
+                            No linked care plan is available.
+                        </div>
+                    `;
+                }
+
+                // ------------------------------------------------------------
+                // 2. HOSPITAL SUPPORT PLAN CONTEXT
+                // ------------------------------------------------------------
+                let hospital_html = '';
+                const hospital = context.hospital_support_plan;
+
+                if (hospital) {
+                    hospital_html = `
+                        <div class="hospital-support-plan-box" style="
+                            background: #fff9db;
+                            border: 1px solid #ffe066;
+                            border-radius: 6px;
+                            padding: 12px;
+                            margin-top: 14px;
+                            font-size: 12px;
+                        ">
+                            <h6 style="color: #f59f00; margin-top: 0; margin-bottom: 8px; font-weight: bold;">
+                                <i class="fa fa-hospital-o"></i> Hospital Support Context
+                            </h6>
+
+                            ${
+                                hospital.diagnosis
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Diagnosis:</strong><br>
+                                        ${safe(hospital.diagnosis)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.how_person_communicates
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Communication:</strong><br>
+                                        ${safe(hospital.how_person_communicates)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.mealtime_assistance_description
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Mealtime Assistance:</strong><br>
+                                        ${safe(hospital.mealtime_assistance_description)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.meals_texture
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Meals Texture:</strong>
+                                        ${safe(hospital.meals_texture)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.drinks_texture
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Drinks Texture:</strong>
+                                        ${safe(hospital.drinks_texture)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.personal_care_assistance_description
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Personal Care:</strong><br>
+                                        ${safe(hospital.personal_care_assistance_description)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.toileting_assistance_description
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Toileting:</strong><br>
+                                        ${safe(hospital.toileting_assistance_description)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                            ${
+                                hospital.assistance_move_around_ward_description
+                                ? `
+                                    <p style="margin-bottom: 6px;">
+                                        <strong>Mobility:</strong><br>
+                                        ${safe(hospital.assistance_move_around_ward_description)}
+                                    </p>
+                                `
+                                : ''
+                            }
+
+                        </div>
+                    `;
+                }
+
+                // ------------------------------------------------------------
+                // 3. CRITICAL CARE PLANS CONTEXT
+                // ------------------------------------------------------------
+                const care_context = context.care_context || {};
+                let critical_care_html = '';
+                const care_links = [];
+
+                if (care_context.hospital_support_plan) {
+                    care_links.push({
+                        doctype: 'Hospital Support Plan',
+                        name: care_context.hospital_support_plan,
+                        label: 'Hospital Support Plan'
+                    });
+                }
+
+                if (care_context.falls_risk_plan) {
+                    care_links.push({
+                        doctype: 'Falls Risk Plan',
+                        name: care_context.falls_risk_plan,
+                        label: 'Falls Risk Plan'
+                    });
+                }
+
+                if (care_context.epilepsy_management_plan) {
+                    care_links.push({
+                        doctype: 'Epilepsy Management Plan',
+                        name: care_context.epilepsy_management_plan,
+                        label: 'Epilepsy Management Plan'
+                    });
+                }
+
+                if (care_links.length) {
+                    critical_care_html = `
+                        <div style="
+                            margin-top:16px;
+                            padding:12px;
+                            border:1px solid #dee2e6;
+                            border-radius:6px;
+                            background:#fff;
+                        ">
+                            <h6 style="
+                                margin-top:0;
+                                border-bottom:1px solid #dee2e6;
+                                padding-bottom:6px;
+                                color:#1864ab;
+                            ">
+                                Critical Care Plans
+                            </h6>
+
+                            ${care_links.map(function(plan) {
+                                return `
+                                    <button
+                                        class="btn btn-sm btn-default critical-care-plan-btn"
+                                        data-doctype="${safe(plan.doctype)}"
+                                        data-name="${safe(plan.name)}"
+                                        style="
+                                            width:100%;
+                                            text-align:left;
+                                            margin-bottom:6px;
+                                        "
+                                    >
+                                        <i class="fa fa-medkit"></i>
+                                        ${safe(plan.label)}
+
+                                        <span style="
+                                            float:right;
+                                            color:#868e96;
+                                        ">
+                                            View
+                                        </span>
+                                    </button>
+                                `;
+                            }).join('')}
+
+                        </div>
+                    `;
+                }
+
+                // ------------------------------------------------------------
+                // 4. ASSIGNED STAFF
+                // ------------------------------------------------------------
+                let assigned_html = '';
+
+                if (assigned_staff.length) {
+                    assigned_staff.forEach(function(row) {
+                        assigned_html += `
+                            <div style="
+                                font-size: 12px;
+                                margin-bottom: 4px;
+                            ">
+                                <strong>
+                                    ${safe(row.staff_user || '')}
+                                </strong>
+
+                                ${
+                                    row.role
+                                        ? ` — ${safe(row.role)}`
+                                        : ''
+                                }
+                            </div>
+                        `;
+                    });
+                } else {
+                    assigned_html = `
+                        <span class="text-muted">
+                            No specific staff assignment recorded.
+                        </span>
+                    `;
+                }
+
+                // ------------------------------------------------------------
+                // 5. ASSEMBLE HTML BODY
+                // ------------------------------------------------------------
+                const html = `
+                    <div>
+                        <h6 style="
+                            color:#1864ab;
+                            border-bottom:1px solid #a5d8ff;
+                            padding-bottom:5px;
+                        ">
+                            Task
+                        </h6>
+
+                        <p>
+                            <strong>Task:</strong>
+                            ${safe(task.task_name || '')}
+                        </p>
+
+                        <p>
+                            <strong>Participant:</strong>
+                            ${safe(participant.name || '')}
+                        </p>
+
+                        <p>
+                            <strong>Priority:</strong>
+                            ${safe(task.clinical_priority || '')}
+                        </p>
+
+                        <p>
+                            <strong>Category:</strong>
+                            ${safe(task.task_category || '')}
+                        </p>
+
+                        <p>
+                            <strong>Instructions:</strong>
+                            ${safe(task.description || 'None')}
+                        </p>
+
+                        <h6 style="
+                            color:#1864ab;
+                            border-bottom:1px solid #a5d8ff;
+                            padding-bottom:5px;
+                            margin-top:16px;
+                        ">
+                            Care Plan / Source
+                        </h6>
+
+                        <div>
+                            ${plans_html}
+                        </div>
+
+                        ${hospital_html}
+
+                        ${critical_care_html}
+
+                        <h6 style="
+                            color:#1864ab;
+                            border-bottom:1px solid #a5d8ff;
+                            padding-bottom:5px;
+                            margin-top:16px;
+                        ">
+                            Assigned Staff
+                        </h6>
+
+                        ${assigned_html}
+
+                    </div>
+                `;
+
+                $('#panel-left-details').html(html);
+
+                // View Source Plan Handler
+                $('.staff-plan-view-btn').on(
+                    'click',
+                    function() {
+                        const doctype = $(this).attr('data-doctype');
+                        const name = $(this).attr('data-name');
+
+                        if (!doctype || !name) {
+                            return;
+                        }
+
+                        frappe.set_route(
+                            'Form',
+                            doctype,
+                            name
+                        );
+                    }
+                );
+
+                // View Critical Care Plan Handler
+                $('.critical-care-plan-btn').on(
+                    'click',
+                    function() {
+                        const doctype = $(this).attr('data-doctype');
+                        const name = $(this).attr('data-name');
+
+                        if (!doctype || !name) {
+                            return;
+                        }
+
+                        frappe.set_route(
+                            'Form',
+                            doctype,
+                            name
+                        );
+                    }
+                );
+            }
         });
     }
-
 
     // ================================================================
     // RECORD DELIVERY

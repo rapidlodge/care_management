@@ -51,7 +51,7 @@
    "fieldname": "participant",
    "fieldtype": "Link",
    "label": "Participant",
-   "options": "Customer"
+   "options": "Participant Profile"
   },
   {
    "fieldname": "follow_up_details_section",

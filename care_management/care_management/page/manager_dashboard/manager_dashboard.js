@@ -1835,396 +1835,419 @@ class ManagerDashboard {
     // OPEN EXECUTION REVIEW
     // ================================================================
 
-    open_execution_review(
-        execution_instance
-    ) {
+   open_execution_review(
+    execution_instance
+) {
 
-        let me = this;
+    let me = this;
 
-        let dialog =
-            new frappe.ui.Dialog({
+    let dialog =
+        new frappe.ui.Dialog({
 
-                title:
-                    'Manager Execution Review',
+            title:
+                'Manager Execution Review',
 
-                size:
-                    'large',
+            size:
+                'large',
 
-                primary_action_label:
-                    'Save Review',
+            primary_action_label:
+                'Save Review',
 
-                primary_action:
-                    function(values) {
+            primary_action:
+                function(values) {
 
-                        me.save_manager_review(
-                            execution_instance,
-                            values,
-                            dialog
-                        );
-
-                    },
-
-                fields: [
-
-                    {
-                        fieldname:
-                            'execution_instance',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Execution Instance',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'support_task',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Support Task',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'task_name',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Task',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'participant',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Participant',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'staff',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Assigned Staff',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'scheduled_date',
-
-                        fieldtype:
-                            'Date',
-
-                        label:
-                            'Scheduled Date',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'scheduled_time',
-
-                        fieldtype:
-                            'Time',
-
-                        label:
-                            'Scheduled Time',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'status',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Status',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'review_category',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Review Category',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'review_priority',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Review Priority',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'exception_type',
-
-                        fieldtype:
-                            'Data',
-
-                        label:
-                            'Exception',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'follow_up_required',
-
-                        fieldtype:
-                            'Check',
-
-                        label:
-                            'Follow-up Required',
-
-                        read_only:
-                            1
-                    },
-
-                    {
-                        fieldname:
-                            'notes',
-
-                        fieldtype:
-                            'Small Text',
-
-                        label:
-                            'Notes',
-
-                        read_only:
-                            1
-                    },
-                    {
-                        fieldname:
-                            'follow_up_section',
-
-                        fieldtype:
-                            'Section Break',
-
-                        label:
-                            'Follow-up'
-                    },
-
-
-                    {
-                        fieldname:
-                            'follow_up_action',
-
-                        fieldtype:
-                            'Select',
-
-                        label:
-                            'Manager Follow-up Action',
-
-                        options:
-                            [
-                                '',
-                                'Acknowledge',
-                                'Create Follow-up',
-                                'Mark No Follow-up Required'
-                            ].join('\n'),
-
-                        default:
-                            ''
-                    },
-
-
-                    {
-                        fieldname:
-                            'follow_up_notes',
-
-                        fieldtype:
-                            'Small Text',
-
-                        label:
-                            'Manager Notes'
-                    }
-
-                ]
-
-            });
-
-        dialog.show();
-
-        // ------------------------------------------------------------
-        // Loading state
-        // ------------------------------------------------------------
-
-        dialog.set_df_property(
-            'execution_instance',
-            'description',
-            'Loading execution review...'
-        );
-
-        frappe.call({
-
-            method:
-                'care_management.care_management.page.manager_dashboard.manager_dashboard.get_execution_review_detail',
-
-            args: {
-
-                execution_instance:
-                    execution_instance
-
-            },
-
-            callback:
-                function(r) {
-
-                    if (
-                        r.exc
-                    ) {
-
-                        dialog.hide();
-
-                        frappe.msgprint({
-
-                            title:
-                                'Unable to Load Review',
-
-                            message:
-                                'The execution review could not be loaded.',
-
-                            indicator:
-                                'red'
-
-                        });
-
-                        return;
-                    }
-
-                    let data =
-                        r.message || {};
-
-                    dialog.set_values({
-
-                        execution_instance:
-                            me.display_value(
-                                data.execution_instance
-                            ),
-
-                        support_task:
-                            me.display_value(
-                                data.support_task
-                            ),
-
-                        task_name:
-                            me.display_value(
-                                data.task_name
-                            ),
-
-                        participant:
-                            me.display_value(
-                                data.participant
-                            ),
-
-                        staff:
-                            me.display_value(
-                                data.staff
-                            ),
-
-                        scheduled_date:
-                            data.scheduled_date || '',
-
-                        scheduled_time:
-                            data.scheduled_time || '',
-
-                        status:
-                            me.display_value(
-                                data.status
-                            ),
-
-                        review_category:
-                            me.display_value(
-                                data.review_category
-                            ),
-
-                        review_priority:
-                            me.display_value(
-                                data.review_priority
-                            ),
-
-                        exception_type:
-                            me.display_value(
-                                data.exception_type
-                            ),
-
-                        follow_up_required:
-                            data.follow_up_required
-                                ? 1
-                                : 0,
-
-                        notes:
-                            me.display_value(
-                                data.notes
-                            )
-
-                    });
-
-                    dialog.set_df_property(
-                        'execution_instance',
-                        'description',
-                        ''
+                    me.save_manager_review(
+                        execution_instance,
+                        values,
+                        dialog
                     );
 
+                },
+
+            fields: [
+
+                {
+                    fieldname:
+                        'execution_instance',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Execution Instance',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'support_task',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Support Task',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'task_name',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Task',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'participant',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Participant',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'staff',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Assigned Staff',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'scheduled_date',
+
+                    fieldtype:
+                        'Date',
+
+                    label:
+                        'Scheduled Date',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'scheduled_time',
+
+                    fieldtype:
+                        'Time',
+
+                    label:
+                        'Scheduled Time',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'status',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Status',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'review_category',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Review Category',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'review_priority',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Review Priority',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'exception_type',
+
+                    fieldtype:
+                        'Data',
+
+                    label:
+                        'Exception',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'follow_up_required',
+
+                    fieldtype:
+                        'Check',
+
+                    label:
+                        'Follow-up Required',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'notes',
+
+                    fieldtype:
+                        'Small Text',
+
+                    label:
+                        'Notes',
+
+                    read_only:
+                        1
+                },
+
+                {
+                    fieldname:
+                        'follow_up_section',
+
+                    fieldtype:
+                        'Section Break',
+
+                    label:
+                        'Follow-up'
+                },
+
+                {
+                    fieldname:
+                        'follow_up_action',
+
+                    fieldtype:
+                        'Select',
+
+                    label:
+                        'Manager Follow-up Action',
+
+                    options:
+                        [
+                            '',
+                            'Acknowledge',
+                            'Create Follow-up',
+                            'Mark No Follow-up Required'
+                        ].join('\n'),
+
+                    default:
+                        ''
+                },
+
+                {
+                    fieldname:
+                        'follow_up_notes',
+
+                    fieldtype:
+                        'Small Text',
+
+                    label:
+                        'Manager Notes'
                 }
+
+            ]
 
         });
 
-    }
+    dialog.show();
+
+    // ------------------------------------------------------------
+    // Loading state
+    // ------------------------------------------------------------
+
+    dialog.set_df_property(
+        'execution_instance',
+        'description',
+        'Loading execution review...'
+    );
+
+    frappe.call({
+
+        method:
+            'care_management.care_management.page.manager_dashboard.manager_dashboard.get_execution_review_detail',
+
+        args: {
+            execution_instance: execution_instance
+        },
+
+        callback: function(r) {
+
+            if (r.exc || !r.message) {
+
+                dialog.set_df_property(
+                    'execution_instance',
+                    'description',
+                    'Unable to load execution review.'
+                );
+
+                frappe.msgprint(
+                    'Unable to load execution review details.'
+                );
+
+                return;
+            }
+
+            const data = r.message;
+
+            // ----------------------------------------------------
+            // Populate the existing dialog
+            // ----------------------------------------------------
+
+            dialog.set_value(
+                'execution_instance',
+                data.execution_instance || ''
+            );
+
+            dialog.set_value(
+                'support_task',
+                data.support_task || ''
+            );
+
+            dialog.set_value(
+                'task_name',
+                data.task_name || ''
+            );
+
+            dialog.set_value(
+                'participant',
+                data.participant || ''
+            );
+
+            let staff_text = '';
+
+            if (
+                Array.isArray(data.assigned_staff) &&
+                data.assigned_staff.length
+            ) {
+
+                staff_text =
+                    data.assigned_staff
+                        .map(function(row) {
+
+                            let value =
+                                row.staff_user || '';
+
+                            if (row.role) {
+                                value +=
+                                    ' — ' + row.role;
+                            }
+
+                            return value;
+                        })
+                        .join(', ');
+
+            } else {
+
+                staff_text =
+                    data.executed_by || '';
+
+            }
+
+            dialog.set_value(
+                'staff',
+                staff_text
+            );
+
+            dialog.set_value(
+                'scheduled_date',
+                data.scheduled_date || ''
+            );
+
+            dialog.set_value(
+                'scheduled_time',
+                data.scheduled_time || ''
+            );
+
+            dialog.set_value(
+                'status',
+                data.status || ''
+            );
+
+            dialog.set_value(
+                'review_category',
+                data.review_category || ''
+            );
+
+            dialog.set_value(
+                'review_priority',
+                data.review_priority || ''
+            );
+
+            dialog.set_value(
+                'exception_type',
+                data.exception_type || ''
+            );
+
+            dialog.set_value(
+                'follow_up_required',
+                data.follow_up_required ? 1 : 0
+            );
+
+            dialog.set_value(
+                'notes',
+                data.execution_notes || ''
+            );
+
+            dialog.set_df_property(
+                'execution_instance',
+                'description',
+                ''
+            );
+
+            dialog.refresh();
+
+        }
+
+    });
+
+}
     // ================================================================
     // ================================================================
     // SAVE MANAGER REVIEW
@@ -2582,14 +2605,13 @@ class ManagerDashboard {
                         }
 
                         frappe.call({
-
                             method:
                                 'care_management.care_management.page.manager_dashboard.manager_dashboard.create_manager_follow_up',
 
                             args: {
 
                                 execution_instance:
-                                    execution_instance,
+                                    values.execution_instance || execution_instance,
 
                                 follow_up_reason:
                                     values.follow_up_reason,

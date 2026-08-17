@@ -81,6 +81,8 @@ class SupportTaskExecutionInstance(Document):
 				"An execution instance already exists for this scheduled task occurrence."
 		)
 	def _validate_execution_data(self):
+		"""Validate execution requirements based on the final execution status."""
+
 		terminal_statuses = {
 			"Delivered",
 			"Partially Completed",
@@ -90,7 +92,12 @@ class SupportTaskExecutionInstance(Document):
 			"Cancelled",
 		}
 
+		# ------------------------------------------------------------
+		# Terminal execution statuses require execution information
+		# ------------------------------------------------------------
+
 		if self.status in terminal_statuses:
+
 			if not self.executed_by:
 				frappe.throw(
 					"Executed By is required when an execution is completed."
@@ -101,10 +108,42 @@ class SupportTaskExecutionInstance(Document):
 					"Actual Execution Time is required when an execution is completed."
 				)
 
-		if self.follow_up_required and not self.execution_notes:
+		# ------------------------------------------------------------
+		# Non-successful execution outcomes require explanation
+		# ------------------------------------------------------------
+
+		requires_notes = {
+			"Partially Completed",
+			"Refused / Declined",
+			"Not Applicable",
+			"Missed",
+		}
+
+		if (
+			self.status in requires_notes
+			and not (self.execution_notes or "").strip()
+		):
 			frappe.throw(
-				"Execution Notes / Outcome Details are required when follow-up is required."
+				f"Execution Notes / Outcome Details are required "
+				f"when execution status is '{self.status}'."
 			)
+
+		# ------------------------------------------------------------
+		# Follow-up always requires notes
+		# ------------------------------------------------------------
+
+		if self.follow_up_required and not (
+			self.execution_notes or ""
+		).strip():
+
+			frappe.throw(
+				"Execution Notes / Outcome Details are required "
+				"when follow-up is required."
+			)
+
+		# ------------------------------------------------------------
+		# Keep Outcome synchronized with Status
+		# ------------------------------------------------------------
 
 		if self.status == "Delivered":
 			self.outcome = self.outcome or "Completed"

@@ -8,7 +8,6 @@
   "field_order": [
     "participant",
     "date_plan_completed",
-    "date_of_birth",
     "address",
     "phone",
     "gender",
@@ -89,13 +88,7 @@
       "label": "Date plan completed",
       "reqd": 1
     },
-    {
-      "fetch_from": "participant.date_of_birth",
-      "fieldname": "date_of_birth",
-      "fieldtype": "Date",
-      "label": "Date of birth",
-      "read_only": 1
-    },
+
     {
       "fieldname": "address",
       "fieldtype": "Small Text",
