@@ -1,0 +1,214 @@
+{
+ "actions": [],
+ "autoname": "format:CCP-{participant}-{#####}",
+ "creation": "2026-08-17 15:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "plan_name",
+  "participant",
+  "category",
+  "status",
+  "column_break_dates",
+  "start_date",
+  "end_date",
+  "assigned_supervisor",
+  "goals_section",
+  "purpose_and_goals",
+  "participant_preferences",
+  "risk_notes",
+  "activities_section",
+  "activities",
+  "audit_section",
+  "activated_by",
+  "activated_on",
+  "column_break_audit",
+  "deactivated_by",
+  "deactivated_on",
+  "deactivation_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Overview"
+  },
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Plan Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Participant",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "default": "Daily Living",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Plan Category",
+   "options": "Daily Living\nCommunity & Social\nCapacity Building\nHealth & Wellbeing\nSpecialized Support\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending Review\nActive\nDeactivated\nExpired",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "assigned_supervisor",
+   "fieldtype": "Link",
+   "label": "Responsible Supervisor",
+   "options": "User"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "goals_section",
+   "fieldtype": "Section Break",
+   "label": "Care Context & Goals"
+  },
+  {
+   "fieldname": "purpose_and_goals",
+   "fieldtype": "Small Text",
+   "label": "Purpose & Goals"
+  },
+  {
+   "fieldname": "participant_preferences",
+   "fieldtype": "Small Text",
+   "label": "Participant Preferences & Routines"
+  },
+  {
+   "fieldname": "risk_notes",
+   "fieldtype": "Small Text",
+   "label": "Health, Safety & Risk Precautions"
+  },
+  {
+   "fieldname": "activities_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Activities"
+  },
+  {
+   "fieldname": "activities",
+   "fieldtype": "Table",
+   "label": "Activities",
+   "options": "Custom Care Plan Activity",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Audit & Lifecycle Tracking"
+  },
+  {
+   "fieldname": "activated_by",
+   "fieldtype": "Link",
+   "label": "Activated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activated_on",
+   "fieldtype": "Datetime",
+   "label": "Activated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_audit",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "deactivated_by",
+   "fieldtype": "Link",
+   "label": "Deactivated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deactivated_on",
+   "fieldtype": "Datetime",
+   "label": "Deactivated On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deactivation_reason",
+   "fieldtype": "Small Text",
+   "label": "Deactivation Reason",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-08-18 12:54:38.929776",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Custom Care Plan",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Care Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Support Worker"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

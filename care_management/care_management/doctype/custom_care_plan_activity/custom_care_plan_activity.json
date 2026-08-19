@@ -1,0 +1,152 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-08-17 15:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "activity_name",
+    "activity_category",
+    "priority",
+    "is_active",
+    "column_break_sched",
+    "frequency",
+    "scheduled_time",
+    "expected_duration_minutes",
+    "staff_count_required",
+    "section_break_recurrence",
+    "days_of_week",
+    "day_of_month",
+    "section_break_instructions",
+    "instructions",
+    "participant_notes",
+    "section_break_tracking",
+    "source_task_ref"
+  ],
+  "fields": [
+    {
+      "fieldname": "activity_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Activity Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "activity_category",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Activity Category",
+      "options": "\nDaily Living\nCommunity & Social\nCapacity Building\nHealth & Wellbeing\nPersonal Care\nSafety & Routine\nOther",
+      "default": "Daily Living",
+      "reqd": 1
+    },
+    {
+      "default": "Medium",
+      "fieldname": "priority",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Priority",
+      "options": "Low\nMedium\nHigh\nUrgent",
+      "reqd": 1
+    },
+    {
+      "default": "1",
+      "fieldname": "is_active",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "Active"
+    },
+    {
+      "fieldname": "column_break_sched",
+      "fieldtype": "Column Break"
+    },
+    {
+      "default": "Daily",
+      "fieldname": "frequency",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Frequency",
+      "options": "Daily\nWeekly\nMonthly\nSpecific Days\nAs Needed",
+      "reqd": 1
+    },
+    {
+      "fieldname": "scheduled_time",
+      "fieldtype": "Time",
+      "in_list_view": 1,
+      "label": "Scheduled Time",
+      "reqd": 1
+    },
+    {
+      "default": "30",
+      "fieldname": "expected_duration_minutes",
+      "fieldtype": "Int",
+      "label": "Duration (Minutes)",
+      "reqd": 1
+    },
+    {
+      "default": "1",
+      "fieldname": "staff_count_required",
+      "fieldtype": "Int",
+      "label": "Staff Count Required",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_break_recurrence",
+      "fieldtype": "Section Break",
+      "label": "Recurrence Rules",
+      "depends_on": "eval:in_list(['Weekly', 'Specific Days', 'Monthly'], doc.frequency)"
+    },
+    {
+      "fieldname": "days_of_week",
+      "fieldtype": "Data",
+      "label": "Days of Week (comma-separated, e.g. Mon, Wed, Fri)",
+      "depends_on": "eval:in_list(['Weekly', 'Specific Days'], doc.frequency)"
+    },
+    {
+      "fieldname": "day_of_month",
+      "fieldtype": "Int",
+      "label": "Day of Month (1-31)",
+      "depends_on": "eval:doc.frequency == 'Monthly'"
+    },
+    {
+      "fieldname": "section_break_instructions",
+      "fieldtype": "Section Break",
+      "label": "Instructions & Notes"
+    },
+    {
+      "fieldname": "instructions",
+      "fieldtype": "Text",
+      "label": "Staff Delivery Instructions",
+      "reqd": 1
+    },
+    {
+      "fieldname": "participant_notes",
+      "fieldtype": "Small Text",
+      "label": "Participant Preferences / Notes"
+    },
+    {
+      "fieldname": "section_break_tracking",
+      "fieldtype": "Section Break",
+      "label": "Operational Tracking",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "source_task_ref",
+      "fieldtype": "Link",
+      "label": "Linked Support Task",
+      "options": "Support Task",
+      "read_only": 1
+    }
+  ],
+  "istable": 1,
+  "links": [],
+  "modified": "2026-08-17 15:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Care Management",
+  "name": "Custom Care Plan Activity",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "idx",
+  "sort_order": "ASC"
+}
