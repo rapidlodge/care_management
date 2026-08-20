@@ -1,60 +1,35 @@
 import frappe
-from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, today, now_datetime
+from frappe.tests import IntegrationTestCase
+from frappe.utils import add_days, now_datetime, today
+
 from care_management.care_management.services.custom_plan_sync_engine import CustomPlanSyncEngine
+from care_management.care_management.tests.helpers import (
+    ensure_test_participant,
+    ensure_test_support_plan,
+)
+
+IGNORE_TEST_RECORD_DEPENDENCIES = [
+    "Participant Profile",
+    "Support Task",
+    "User",
+]
 
 
-class TestCustomCarePlan(FrappeTestCase):
+class TestCustomCarePlan(IntegrationTestCase):
     def setUp(self):
         super().setUp()
         frappe.set_user("Administrator")
         self.participant = self._ensure_test_participant()
+        self.support_plan = ensure_test_support_plan(self.participant)
 
     def tearDown(self):
-        # Cleanup plans created in test cases
-        test_plans = frappe.get_all(
-            "Custom Care Plan",
-            filters={"plan_name": ["like", "Test Plan%"]},
-            pluck="name"
-        )
-        for p in test_plans:
-            doc = frappe.get_doc("Custom Care Plan", p)
-            if doc.status == "Active":
-                doc.deactivate_plan(reason="Test TearDown")
-            
-            # Clean up generated tasks and rules
-            tasks = frappe.get_all("Support Task", filters={"source_docname": p}, pluck="name")
-            for t in tasks:
-                frappe.db.delete("Support Task Schedule Rule", {"support_task": t})
-                frappe.db.delete("Support Task Execution Instance", {"support_task": t})
-                frappe.db.delete("Support Task", t)
-            
-            frappe.db.delete("Custom Care Plan Activity", {"parent": p})
-            frappe.db.delete("Custom Care Plan", p)
+        frappe.db.rollback()
+        super().tearDown()
 
     # care_management/care_management/doctype/custom_care_plan/test_custom_care_plan.py
 
     def _ensure_test_participant(self):
-        participant_doctype = "Participant Profile"
-        participant_name = "TEST-PART-PROFILE-001"
-        
-        if not frappe.db.exists(participant_doctype, participant_name):
-            doc = frappe.new_doc(participant_doctype)
-            
-            # Populate standard fields based on Participant Profile schema
-            if doc.meta.has_field("first_name"):
-                doc.first_name = "John"
-                doc.last_name = "Test"
-            elif doc.meta.has_field("participant_name"):
-                doc.participant_name = "John Test Doe"
-            
-            if doc.meta.has_field("status"):
-                doc.status = "Active"
-                
-            doc.name = participant_name
-            doc.insert(ignore_permissions=True)
-            return doc.name
-        return participant_name
+        return ensure_test_participant()
 
     def _create_sample_plan(self, plan_name="Test Plan Gardening", status="Draft"):
         plan = frappe.new_doc("Custom Care Plan")
@@ -161,20 +136,23 @@ class TestCustomCarePlan(FrappeTestCase):
         tasks = frappe.get_all(
             "Support Task",
             filters={"source_doctype": "Custom Care Plan", "source_docname": plan.name},
-            fields=["name", "task_name", "is_active", "source_row_id"]
+            fields=["name", "task_name", "status", "source_row_id"]
         )
         self.assertEqual(len(tasks), 2)
         for t in tasks:
-            self.assertEqual(t.is_active, 1)
+            self.assertEqual(t.status, "Active")
 
             # Check Schedule Rules
             rules = frappe.get_all(
                 "Support Task Schedule Rule",
-                filters={"support_task": t.name},
-                fields=["name", "is_active", "frequency", "scheduled_time"]
+                filters={
+                    "parent": t.name,
+                    "parenttype": "Support Task",
+                    "parentfield": "schedule_rules",
+                },
+                fields=["name", "recurrence_type", "scheduled_time"]
             )
             self.assertEqual(len(rules), 1)
-            self.assertEqual(rules[0].is_active, 1)
 
     # -------------------------------------------------------------
     # 3. Idempotency Tests
@@ -197,9 +175,22 @@ class TestCustomCarePlan(FrappeTestCase):
         })
         self.assertEqual(task_count, 2)
 
-        rule_count = frappe.db.count("Support Task Schedule Rule", {
-            "participant": self.participant
-        })
+        task_names = frappe.get_all(
+            "Support Task",
+            filters={
+                "source_doctype": "Custom Care Plan",
+                "source_docname": plan.name,
+            },
+            pluck="name",
+        )
+        rule_count = frappe.db.count(
+            "Support Task Schedule Rule",
+            {
+                "parent": ["in", task_names],
+                "parenttype": "Support Task",
+                "parentfield": "schedule_rules",
+            },
+        )
         self.assertEqual(rule_count, 2)
 
     # -------------------------------------------------------------
@@ -223,11 +214,11 @@ class TestCustomCarePlan(FrappeTestCase):
         }, "name")
 
         task = frappe.get_doc("Support Task", task_name)
-        self.assertEqual(task.instructions, "Updated: Ensure gloves are worn.")
-        self.assertEqual(task.expected_duration, 25)
+        self.assertEqual(task.description, "Updated: Ensure gloves are worn.")
+        self.assertEqual(task.estimated_duration_mins, 25)
 
     def test_removing_activity_deactivates_stale_task(self):
-        """Removing an activity row deactivates its task and schedule rule."""
+        """Removing an activity row pauses its task without deleting history."""
         plan = self._create_sample_plan(plan_name="Test Plan Remove Row")
         plan.activate_plan()
 
@@ -244,17 +235,20 @@ class TestCustomCarePlan(FrappeTestCase):
                 "source_docname": plan.name,
                 "source_row_id": removed_row_id
             },
-            fields=["name", "is_active"]
+            fields=["name", "status"]
         )
         self.assertEqual(len(stale_task), 1)
-        self.assertEqual(stale_task[0].is_active, 0)
+        self.assertEqual(stale_task[0].status, "Paused")
 
-        stale_rule = frappe.db.get_value(
+        stale_rule_count = frappe.db.count(
             "Support Task Schedule Rule",
-            {"support_task": stale_task[0].name},
-            "is_active"
+            {
+                "parent": stale_task[0].name,
+                "parenttype": "Support Task",
+                "parentfield": "schedule_rules",
+            },
         )
-        self.assertEqual(stale_rule, 0)
+        self.assertEqual(stale_rule_count, 1)
 
     # -------------------------------------------------------------
     # 5. Deactivation & Audit History Protection
@@ -273,15 +267,15 @@ class TestCustomCarePlan(FrappeTestCase):
         # Mock a historical completed execution instance
         completed_inst = frappe.new_doc("Support Task Execution Instance")
         completed_inst.support_task = linked_task
-        completed_inst.participant = self.participant
         completed_inst.scheduled_date = add_days(today(), -1)
-        completed_inst.status = "Completed"
+        completed_inst.status = "Delivered"
+        completed_inst.executed_by = "Administrator"
+        completed_inst.actual_execution_time = now_datetime()
         completed_inst.insert(ignore_permissions=True)
 
         # Mock a future pending execution instance
         pending_inst = frappe.new_doc("Support Task Execution Instance")
         pending_inst.support_task = linked_task
-        pending_inst.participant = self.participant
         pending_inst.scheduled_date = add_days(today(), 2)
         pending_inst.status = "Pending"
         pending_inst.insert(ignore_permissions=True)
@@ -294,7 +288,7 @@ class TestCustomCarePlan(FrappeTestCase):
 
         # Verify historical log is strictly preserved
         completed_inst.reload()
-        self.assertEqual(completed_inst.status, "Completed")
+        self.assertEqual(completed_inst.status, "Delivered")
 
         # Verify pending future instance was cancelled
         pending_inst.reload()
@@ -312,9 +306,10 @@ class TestCustomCarePlan(FrappeTestCase):
 
         execution = frappe.new_doc("Support Task Execution Instance")
         execution.support_task = linked_task
-        execution.participant = self.participant
         execution.scheduled_date = today()
-        execution.status = "Completed"
+        execution.status = "Delivered"
+        execution.executed_by = "Administrator"
+        execution.actual_execution_time = now_datetime()
         execution.insert(ignore_permissions=True)
 
         self.assertRaises(frappe.ValidationError, plan.delete)

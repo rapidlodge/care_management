@@ -251,8 +251,6 @@ def sync_doc_to_support_task(doc, method=None):
     desired = _build_desired_tasks(doc, config)
     _reconcile_tasks(doc.doctype, doc.name, plan_name, config, desired)
 
-    frappe.db.commit()
-
 
 def _get_or_create_active_plan(participant):
     plan_name = frappe.db.get_value(
