@@ -1,22 +1,11 @@
 # Copyright (c) 2026, Hex Flow and Contributors
 # See license.txt
 
-# import frappe
 from frappe.tests import IntegrationTestCase
 
-
-# On IntegrationTestCase, the doctype test records and all
-# link-field test record dependencies are recursively loaded
-# Use these module variables to add/remove to/from that list
-EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
-IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
+from care_management.care_management.tests.helpers import assert_care_doctype_metadata
 
 
-
-class IntegrationTestMedicationAdministrationLog(IntegrationTestCase):
-	"""
-	Integration tests for MedicationAdministrationLog.
-	Use this class for testing interactions between multiple components.
-	"""
-
-	pass
+class TestMedicationAdministrationLog(IntegrationTestCase):
+	def test_doctype_metadata(self):
+		assert_care_doctype_metadata(self, "Medication Administration Log")

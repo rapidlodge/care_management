@@ -1,15 +1,18 @@
 # Copyright (c) 2026, Hex Flow and Contributors
 # See license.txt
 
+from datetime import timedelta
+
 import frappe
 from frappe.tests import IntegrationTestCase
 
+from care_management.care_management.tests.helpers import ensure_test_participant
 
 EXTRA_TEST_RECORD_DEPENDENCIES = []
 IGNORE_TEST_RECORD_DEPENDENCIES = []
 
 
-class IntegrationTestWeeklyMealPlanner(IntegrationTestCase):
+class TestWeeklyMealPlanner(IntegrationTestCase):
 	"""
 	Integration tests for:
 
@@ -47,56 +50,7 @@ class IntegrationTestWeeklyMealPlanner(IntegrationTestCase):
 		super().tearDown()
 
 	def _get_or_create_test_participant(self):
-		participant = frappe.db.get_value(
-			"Participant Profile",
-			{"participant": "Phase 1 Test Participant"},
-			"name",
-		)
-
-		if participant:
-			return participant
-
-		doc = frappe.get_doc({
-			"doctype": "Participant Profile",
-			"participant": "Phase 1 Test Participant",
-			"legally_competent": "Yes",
-			"marital_status": "Single",
-			"living_arrangements": [],
-			"religious_or_spiritual": "No",
-			"religion": "No Religion",
-			"cald": "No",
-			"atsi": "Neither",
-			"consent_received": [],
-			"organ_cadaver_donor": "Unknown",
-			"chap": "No",
-			"peep": "No",
-			"risk_or_alert_present": "No",
-			"risk_or_alert": "Other",
-			"interpreter_required": "No",
-			"english_ability": "Fluent",
-			"communication_supports_required": "No",
-			"communication_type": "Verbal",
-			"primary_disability": "Other",
-			"secondary_disability": [],
-			"disability_limitations": "Mild",
-			"ability_to_act_in_emergency": "Yes",
-			"end_of_life_plan": "No",
-			"bsp_plan": "No",
-			"receive_mobility_allowance": "No",
-			"medicare_number": "TEST-MEDICARE",
-			"crn_number": "TEST-CRN",
-			"private_health_care_cover": "No",
-			"companion_card": "No",
-			"funding_type": "Private",
-			"ndia_funding_type": "Plan Managed",
-			"pharmacist_name": "Test Pharmacist",
-			"asthma_action_plan": "N/A",
-			"ascia_action_plans": "N/A",
-		})
-
-		doc.insert(ignore_permissions=True)
-
-		return doc.name
+		return ensure_test_participant()
 
 	def _get_tasks(self, planner_name):
 		return frappe.get_all(
@@ -192,7 +146,7 @@ class IntegrationTestWeeklyMealPlanner(IntegrationTestCase):
 		self.assertEqual(str(rule.start_date), "2026-08-10")
 		self.assertEqual(str(rule.end_date), "2026-08-16")
 
-		self.assertEqual(str(rule.scheduled_time), "07:00:00")
+		self.assertEqual(rule.scheduled_time, timedelta(hours=7))
 		self.assertEqual(rule.recurrence_type, "Selected Days")
 
 		self.assertEqual(rule.monday, 1)

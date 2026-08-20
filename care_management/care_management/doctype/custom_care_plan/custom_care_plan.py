@@ -306,10 +306,10 @@ class CustomCarePlan(Document):
             return
 
         historical_statuses = [
-            "Completed",
+            "Delivered",
             "Partially Completed",
             "In Progress",
-            "Refused",
+            "Refused / Declined",
             "Missed",
         ]
 
@@ -389,6 +389,7 @@ class CustomCarePlan(Document):
 
         # One and only one explicit synchronization.
         CustomPlanSyncEngine(self).sync()
+        self.flags.skip_custom_plan_sync = False
 
         frappe.msgprint(
             _(
