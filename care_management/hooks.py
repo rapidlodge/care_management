@@ -5,6 +5,11 @@ app_description = "Care Management"
 app_email = "info@hexflow.com.au"
 app_license = "mit"
 
+from care_management.care_management.permissions import (
+	PARTICIPANT_DOCUMENT_PERMISSION_HOOKS,
+	PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS,
+)
+
 # Apps
 # ------------------
 
@@ -134,11 +139,18 @@ app_license = "mit"
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
+permission_query_conditions = dict(PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS)
+
+has_permission = dict(PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)
+
 # Document Events
 # ---------------
 # Hook on document methods and events
 
 doc_events = {
+	"DocShare": {
+		"validate": "care_management.care_management.permissions.validate_participant_docshare",
+	},
 	"Weekly Meal Planner": {
 		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
 	},

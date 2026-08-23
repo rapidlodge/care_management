@@ -68,6 +68,14 @@ RESOLVABLE_PARTICIPANT_DOCTYPES = frozenset(
 	| CHILD_PARTICIPANT_PARENTFIELDS.keys()
 )
 
+PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
+	{"Participant Profile"}
+	| DIRECT_PARTICIPANT_FIELDS.keys()
+	| INDIRECT_PARTICIPANT_PATHS.keys()
+)
+
+STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
+
 MAX_RESOLUTION_DEPTH = 8
 
 
@@ -308,3 +316,211 @@ def require_task_action_access(task, user=None):
 	if not can_access_task(task, user=user):
 		raise frappe.PermissionError
 	return True
+
+
+def _is_participant_boundary_administrator(user):
+	return is_administrator(user) or is_system_manager(user)
+
+
+def _has_standard_participant_document_role(user):
+	return has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=user)
+
+
+def _doc_doctype(doc):
+	if isinstance(doc, dict):
+		return str(doc.get("doctype") or "").strip()
+	return str(getattr(doc, "doctype", "") or "").strip()
+
+
+def _doc_name(doc):
+	if isinstance(doc, str):
+		return doc.strip()
+	if isinstance(doc, dict):
+		return str(doc.get("name") or "").strip()
+	return str(getattr(doc, "name", "") or "").strip()
+
+
+def _resolve_protected_document_participant(doctype, doc):
+	if doctype == "Participant Profile":
+		name = _doc_name(doc)
+		if not name:
+			return None
+		if isinstance(doc, str) and not frappe.db.exists("Participant Profile", name):
+			return None
+		return name
+	return resolve_participant(doctype, doc)
+
+
+def has_participant_document_permission(doc, ptype=None, user=None, debug=False):
+	doctype = _doc_doctype(doc)
+	resolved_user = normalize_user(user)
+	if not doctype or doctype not in PROTECTED_PARTICIPANT_DOCTYPES:
+		return False
+	if not resolved_user:
+		return False
+	if _is_participant_boundary_administrator(resolved_user):
+		return True
+	if not _has_standard_participant_document_role(resolved_user):
+		return False
+	if doctype == "Participant Profile" and str(ptype or "").strip().lower() == "create":
+		return True
+
+	participant = _resolve_protected_document_participant(doctype, doc)
+	if not participant:
+		return False
+	return has_participant_access(participant, user=resolved_user, applicable_for=doctype)
+
+
+def _sql_table(doctype):
+	return f"`tab{doctype}`"
+
+
+def _sql_value(value):
+	return frappe.db.escape(value)
+
+
+def _sql_in(values):
+	values = tuple(sorted(str(value) for value in values if value))
+	if not values:
+		return None
+	return ", ".join(_sql_value(value) for value in values)
+
+
+def _participant_query_condition(doctype, participant_values):
+	values = _sql_in(participant_values)
+	if not values:
+		return "1=0"
+	table = _sql_table(doctype)
+
+	if doctype == "Participant Profile":
+		return f"{table}.`name` in ({values})"
+
+	if doctype in DIRECT_PARTICIPANT_FIELDS:
+		fieldname = DIRECT_PARTICIPANT_FIELDS[doctype]
+		return f"{table}.`{fieldname}` in ({values})"
+
+	if doctype == "Support Task":
+		return (
+			"exists ("
+			"select 1 from `tabSupport Plan` support_plan "
+			f"where support_plan.`name` = {table}.`support_plan` "
+			f"and support_plan.`participant` in ({values})"
+			")"
+		)
+
+	if doctype == "Support Task Execution Instance":
+		return (
+			"exists ("
+			"select 1 from `tabSupport Task` support_task "
+			"inner join `tabSupport Plan` support_plan "
+			"on support_plan.`name` = support_task.`support_plan` "
+			f"where support_task.`name` = {table}.`support_task` "
+			f"and support_plan.`participant` in ({values})"
+			")"
+		)
+
+	if doctype in {"Support Task Delivery Log", "Support Task Missed Log"}:
+		return (
+			"exists ("
+			"select 1 from `tabSupport Task Execution Instance` execution_instance "
+			"inner join `tabSupport Task` support_task "
+			"on support_task.`name` = execution_instance.`support_task` "
+			"inner join `tabSupport Plan` support_plan "
+			"on support_plan.`name` = support_task.`support_plan` "
+			f"where execution_instance.`name` = {table}.`execution_instance` "
+			f"and support_plan.`participant` in ({values})"
+			")"
+		)
+
+	return "1=0"
+
+
+def get_participant_permission_query_conditions(doctype, user=None):
+	doctype = str(doctype or "").strip()
+	resolved_user = normalize_user(user)
+	if doctype not in PROTECTED_PARTICIPANT_DOCTYPES or not resolved_user:
+		return "1=0"
+	if _is_participant_boundary_administrator(resolved_user):
+		return ""
+	if not _has_standard_participant_document_role(resolved_user):
+		return "1=0"
+	grants = get_user_participant_grants(resolved_user, applicable_for=doctype)
+	return _participant_query_condition(doctype, grants)
+
+
+def permission_query_condition_method_name(doctype):
+	suffix = (
+		str(doctype or "")
+		.strip()
+		.lower()
+		.replace("-", "_")
+		.replace("/", "_")
+		.replace(" ", "_")
+	)
+	return f"get_{suffix}_permission_query_conditions"
+
+
+def _make_permission_query_condition(bound_doctype):
+	def _permission_query_conditions(user=None, doctype=None):
+		requested_doctype = str(doctype or bound_doctype).strip()
+		if requested_doctype != bound_doctype:
+			return "1=0"
+		return get_participant_permission_query_conditions(bound_doctype, user=user)
+
+	_permission_query_conditions.__name__ = permission_query_condition_method_name(bound_doctype)
+	return _permission_query_conditions
+
+
+for _participant_doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES):
+	globals()[permission_query_condition_method_name(_participant_doctype)] = _make_permission_query_condition(
+		_participant_doctype
+	)
+
+
+PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS = MappingProxyType(
+	{
+		doctype: f"care_management.care_management.permissions.{permission_query_condition_method_name(doctype)}"
+		for doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES)
+	}
+)
+
+PARTICIPANT_DOCUMENT_PERMISSION_HOOKS = MappingProxyType(
+	{
+		doctype: "care_management.care_management.permissions.has_participant_document_permission"
+		for doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES)
+	}
+)
+
+
+def _docshare_user_is_shareable(user):
+	raw_user = str(user or "").strip()
+	if not raw_user:
+		return False
+
+	resolved_user = normalize_user(raw_user)
+	if not resolved_user:
+		return False
+	user_row = frappe.db.get_value("User", resolved_user, ["enabled", "user_type"], as_dict=True)
+	if not user_row:
+		return False
+	return bool(user_row.enabled) and user_row.user_type == "System User"
+
+
+def validate_participant_docshare(doc, method=None):
+	share_doctype = str(doc.get("share_doctype") if hasattr(doc, "get") else getattr(doc, "share_doctype", "")).strip()
+	if share_doctype not in PROTECTED_PARTICIPANT_DOCTYPES:
+		return None
+
+	share_name = doc.get("share_name") if hasattr(doc, "get") else getattr(doc, "share_name", None)
+	share_user = doc.get("user") if hasattr(doc, "get") else getattr(doc, "user", None)
+	everyone = doc.get("everyone") if hasattr(doc, "get") else getattr(doc, "everyone", None)
+	share_user_value = str(share_user or "").strip()
+	if everyone or not share_user_value or not _docshare_user_is_shareable(share_user_value):
+		raise frappe.PermissionError
+	if not share_name or not frappe.db.exists(share_doctype, share_name):
+		raise frappe.PermissionError
+
+	shared_doc = frappe.get_doc(share_doctype, share_name)
+	if not has_participant_document_permission(shared_doc, "read", share_user_value):
+		raise frappe.PermissionError
+	return None
