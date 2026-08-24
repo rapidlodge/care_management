@@ -2,6 +2,7 @@ import re
 
 import frappe
 from frappe.utils import today
+from frappe.utils import add_days, nowdate
 
 
 TEST_PARTICIPANT_NAME = "R1 Test Participant"
@@ -332,3 +333,184 @@ def ensure_r2c1_task_assignment(task, user):
 	)
 	task_doc.save(ignore_permissions=True)
 	return task_doc.assigned_staff_table[-1].name
+
+
+R2C3B_TEST_PREFIX = "R2C3B"
+
+
+def _r2c3b_slug(value):
+	slug = re.sub(r"[^a-z0-9]+", "-", str(value or "").strip().lower()).strip("-")
+	if not slug:
+		raise ValueError("R2C3B test identifier must produce a non-empty slug")
+	return slug
+
+
+def make_r2c3b_test_user_email(label):
+	return f"r2c3b-{_r2c3b_slug(label)}@example.test"
+
+
+def clear_r2c3b_permission_caches(*users):
+	for user in users:
+		if user:
+			frappe.clear_cache(user=user)
+
+
+def ensure_r2c3b_user(label, roles=(), enabled=1, user_type="System User"):
+	email = make_r2c3b_test_user_email(label)
+	if frappe.db.exists("User", email):
+		user = frappe.get_doc("User", email)
+	else:
+		user = frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": email,
+				"first_name": f"R2C3B {label}",
+				"enabled": enabled,
+				"user_type": user_type,
+				"send_welcome_email": 0,
+			}
+		)
+		user.insert(ignore_permissions=True)
+
+	user.enabled = enabled
+	user.user_type = user_type
+	existing_roles = {row.role for row in user.roles}
+	for role in roles:
+		if role not in existing_roles:
+			user.append("roles", {"role": role})
+	user.save(ignore_permissions=True)
+	clear_r2c3b_permission_caches(user.name)
+	return user.name
+
+
+def ensure_r2c3b_participant(label, medicare_number):
+	return ensure_r2c1_participant(f"R2C3B {label}", medicare_number)
+
+
+def ensure_r2c3b_user_permission(user, participant, applicable_for=None):
+	return ensure_r2c1_user_permission(user, participant, applicable_for=applicable_for)
+
+
+def ensure_r2c3b_support_plan(participant, label):
+	return ensure_r2c1_support_plan(participant, f"R2C3B {label}")
+
+
+def ensure_r2c3b_support_task(support_plan, label, user=None, status="Active", category="Personal Care"):
+	name = ensure_r2c1_support_task(support_plan, f"R2C3B {label}", status=status)
+	task = frappe.get_doc("Support Task", name)
+	task.task_category = category
+	task.status = status
+	if not task.schedule_rules:
+		task.append(
+			"schedule_rules",
+			{
+				"scheduled_time": "09:00:00",
+				"recurrence_type": "Daily",
+				"start_date": nowdate(),
+				"is_floating": 0,
+			},
+		)
+	task.save(ignore_permissions=True)
+	if user:
+		ensure_r2c1_task_assignment(name, user)
+	return name
+
+
+def ensure_r2c3b_execution(task, status="Pending", follow_up_required=0):
+	existing = frappe.db.get_value(
+		"Support Task Execution Instance",
+		{"support_task": task, "scheduled_date": nowdate(), "scheduled_time": "09:00:00"},
+		"name",
+	)
+	if existing:
+		frappe.db.set_value(
+			"Support Task Execution Instance",
+			existing,
+			{
+				"status": status,
+				"follow_up_required": follow_up_required,
+				"execution_notes": "R2C3B synthetic follow-up note" if follow_up_required else None,
+			},
+		)
+		return existing
+	doc = frappe.get_doc(
+		{
+			"doctype": "Support Task Execution Instance",
+			"support_task": task,
+			"scheduled_date": nowdate(),
+			"scheduled_time": "09:00:00",
+			"status": status,
+			"follow_up_required": follow_up_required,
+			"execution_notes": "R2C3B synthetic follow-up note" if follow_up_required else None,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def ensure_r2c3b_manager_follow_up(execution, task, participant, assigned_to):
+	existing = frappe.db.get_value(
+		"Manager Follow-up",
+		{"execution_instance": execution, "status": "Open"},
+		"name",
+	)
+	if existing:
+		return existing
+	doc = frappe.get_doc(
+		{
+			"doctype": "Manager Follow-up",
+			"execution_instance": execution,
+			"support_task": task,
+			"participant": participant,
+			"follow_up_reason": "Other",
+			"priority": "Medium",
+			"description": "R2C3B synthetic follow-up",
+			"assigned_to": assigned_to,
+			"due_date": add_days(today(), 1),
+			"status": "Open",
+			"created_from_dashboard": 1,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def ensure_r2c3b_custom_care_plan(participant, label, status="Draft", supervisor=None):
+	existing = frappe.db.get_value(
+		"Custom Care Plan",
+		{"participant": participant, "plan_name": f"{R2C3B_TEST_PREFIX} Care Plan {label}"},
+		"name",
+	)
+	if existing:
+		doc = frappe.get_doc("Custom Care Plan", existing)
+		doc.status = status
+		doc.save(ignore_permissions=True)
+		return doc.name
+	doc = frappe.get_doc(
+		{
+			"doctype": "Custom Care Plan",
+			"plan_name": f"{R2C3B_TEST_PREFIX} Care Plan {label}",
+			"participant": participant,
+			"category": "Daily Living",
+			"status": status,
+			"start_date": today(),
+			"assigned_supervisor": supervisor,
+			"purpose_and_goals": "R2C3B synthetic goal",
+			"activities": [
+				{
+					"activity_name": "R2C3B synthetic activity",
+					"activity_category": "Daily Living",
+					"priority": "Medium",
+					"is_active": 1,
+					"frequency": "Daily",
+					"scheduled_time": "09:00:00",
+					"expected_duration_minutes": 15,
+					"staff_count_required": 1,
+					"days_of_week": "Monday",
+					"instructions": "R2C3B synthetic instructions",
+				}
+			],
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return doc.name

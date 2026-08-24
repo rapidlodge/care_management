@@ -1,10 +1,96 @@
 import frappe
 from frappe.utils import getdate, nowdate, get_first_day_of_week, add_days
 
+from care_management.care_management import permissions as care_permissions
 from care_management.care_management.utils.task_sync import (
     TRACKER_CONFIG,
     _get_or_create_active_plan,
 )
+
+
+def _schedule_user():
+    return care_permissions.require_schedule_read_access()
+
+
+def _participant_scope_condition(user, params, alias="sp", doctype="Support Task"):
+    if care_permissions.is_system_manager(user) or care_permissions.is_administrator(user):
+        return None
+    grants = care_permissions.get_authorized_participants(user, doctype=doctype)
+    params["authorized_participants"] = tuple(sorted(grants))
+    return f"{alias}.participant in %(authorized_participants)s"
+
+
+def _require_task_read_access(task_name, user):
+    participant = care_permissions.task_participant(task_name)
+    if not participant:
+        raise frappe.PermissionError
+    if care_permissions.has_any_role({"Support Worker"}, user=user):
+        care_permissions.require_task_action_access(task_name, user=user)
+        return participant
+    if not care_permissions.has_any_role({"System Manager", "Care Manager", "Support Coordinator"}, user=user):
+        raise frappe.PermissionError
+    care_permissions.require_endpoint_participant_access(
+        participant,
+        user=user,
+        doctype="Support Task",
+        administrative=care_permissions.is_system_manager(user)
+        or care_permissions.is_administrator(user),
+    )
+    return participant
+
+
+def _has_active_participant_assignment(participant, user):
+    return bool(
+        frappe.db.exists(
+            "Support Task Assigned Staff",
+            {
+                "parenttype": "Support Task",
+                "parentfield": "assigned_staff_table",
+                "staff_user": user,
+            },
+        )
+        and frappe.db.sql(
+            """
+            select st.name
+            from `tabSupport Task` st
+            inner join `tabSupport Plan` sp on sp.name = st.support_plan
+            inner join `tabSupport Task Assigned Staff` ast on ast.parent = st.name
+            where st.status = 'Active'
+            and sp.participant = %(participant)s
+            and ast.parenttype = 'Support Task'
+            and ast.parentfield = 'assigned_staff_table'
+            and ast.staff_user = %(user)s
+            limit 1
+            """,
+            {"participant": participant, "user": user},
+        )
+    )
+
+
+def _require_tracker_write_access(participant, tracker_doctype):
+    user = care_permissions.require_enabled_system_user()
+    if tracker_doctype not in TRACKER_CONFIG:
+        raise frappe.PermissionError
+    if care_permissions.is_system_manager(user) or care_permissions.is_administrator(user):
+        return user
+    if care_permissions.has_any_role({"Care Manager"}, user=user):
+        care_permissions.require_endpoint_participant_access(
+            participant,
+            user=user,
+            doctype=tracker_doctype,
+        )
+        care_permissions.require_standard_document_permission(tracker_doctype, "write", user=user)
+        return user
+    if care_permissions.has_any_role({"Support Worker"}, user=user):
+        care_permissions.require_endpoint_participant_access(
+            participant,
+            user=user,
+            doctype=tracker_doctype,
+        )
+        if not _has_active_participant_assignment(participant, user):
+            raise frappe.PermissionError
+        return user
+    raise frappe.PermissionError
 
 
 # ============================================================================
@@ -150,6 +236,7 @@ def get_week_tasks(
     occurrences that fall inside the requested 7-day window.
     """
 
+    user = _schedule_user()
     start_date = getdate(start_date)
 
     week_dates = [
@@ -162,12 +249,23 @@ def get_week_tasks(
     ]
 
     params = {}
+    scope_condition = _participant_scope_condition(user, params)
+    if scope_condition:
+        conditions.append(scope_condition)
 
     # ------------------------------------------------------------
     # PARTICIPANT FILTER
     # ------------------------------------------------------------
 
     if participant:
+        if not care_permissions.has_participant_access(
+            participant,
+            user=user,
+            administrative=care_permissions.is_system_manager(user)
+            or care_permissions.is_administrator(user),
+            applicable_for="Support Task",
+        ):
+            return []
 
         conditions.append(
             "sp.participant = %(participant)s"
@@ -339,7 +437,7 @@ def _get_participant_care_context(participant):
 
 		falls_name = frappe.db.get_value(
 			"Falls Risk Plan",
-			{"participant": participant},
+			{"participant_name": participant},
 			"name",
 			order_by="modified desc"
 		)
@@ -400,6 +498,8 @@ def get_staff_task_context(task_id):
         -> source_row_id
     """
 
+    user = _schedule_user()
+
     if not task_id:
         frappe.throw("Support Task is required.")
 
@@ -407,6 +507,7 @@ def get_staff_task_context(task_id):
         frappe.throw("Support Task not found.")
 
     task = frappe.get_doc("Support Task", task_id)
+    participant = _require_task_read_access(task.name, user)
 
     # ------------------------------------------------------------
     # Support Plan / Participant
@@ -665,7 +766,6 @@ def get_staff_task_context(task_id):
 # RECORD TASK DELIVERY
 # ============================================================================
 
-@frappe.whitelist()
 def _get_task_schedule_context(task_id, scheduled_date=None):
     """Return the schedule information needed to create an execution instance."""
 
@@ -780,6 +880,7 @@ def _get_or_create_execution_instance(
 @frappe.whitelist()
 def start_task_execution(task_id, scheduled_date=None):
     """Start a scheduled support task."""
+    care_permissions.require_worker_task_action(task_id)
 
     instance = _get_or_create_execution_instance(
         task_id,
@@ -842,6 +943,7 @@ def get_manager_review_tasks(
     This avoids an N+1 Support Task lookup pattern.
     """
 
+    user = care_permissions.require_manager_endpoint_access()
     start_date = start_date or frappe.utils.today()
     end_date = end_date or start_date
 
@@ -856,12 +958,23 @@ def get_manager_review_tasks(
         "start_date": start_date,
         "end_date": end_date,
     }
+    scope_condition = _participant_scope_condition(user, params, doctype="Support Task Execution Instance")
+    if scope_condition:
+        conditions.append(scope_condition)
 
     if status:
         conditions.append("e.status = %(status)s")
         params["status"] = status
 
     if participant:
+        if not care_permissions.has_participant_access(
+            participant,
+            user=user,
+            administrative=care_permissions.is_system_manager(user)
+            or care_permissions.is_administrator(user),
+            applicable_for="Support Task Execution Instance",
+        ):
+            return []
         conditions.append("sp.participant = %(participant)s")
         params["participant"] = participant
 
@@ -1037,6 +1150,7 @@ def record_task_outcome(
     scheduled_date=None,
 ):
     """Record the final staff execution outcome."""
+    care_permissions.require_worker_task_action(task_id)
 
     allowed_outcomes = {
         "Completed",
@@ -1090,6 +1204,7 @@ def record_task_outcome(
     instance.exception_type = exception_type
     instance.follow_up_required = int(follow_up_required or 0)
 
+    # Elevated write is guarded by require_worker_task_action above.
     instance.save(ignore_permissions=True)
 
     # ------------------------------------------------------------
@@ -1118,6 +1233,7 @@ def record_task_outcome(
             "delivery_notes": execution_notes or "",
         })
 
+        # Elevated insert is guarded by require_worker_task_action above.
         log.insert(ignore_permissions=True)
         log_name = log.name
 
@@ -1143,10 +1259,9 @@ def record_task_outcome(
             "omission_notes": execution_notes or "",
         })
 
+        # Elevated insert is guarded by require_worker_task_action above.
         log.insert(ignore_permissions=True)
         log_name = log.name
-
-    frappe.db.commit()
 
     return {
         "status": "success",
@@ -1308,9 +1423,9 @@ def save_tracker_matrix_entries(
     # ---------------------------------------------------------
 
     if tracker_doctype not in TRACKER_CONFIG:
-        frappe.throw(
-            f"{tracker_doctype} is not a registered tracker DocType."
-        )
+        raise frappe.PermissionError
+
+    _require_tracker_write_access(participant, tracker_doctype)
 
     config = TRACKER_CONFIG[tracker_doctype]
 
@@ -1516,9 +1631,10 @@ def save_tracker_matrix_entries(
 
     for parent_doc in touched_parents.values():
 
-        parent_doc.save(
-            ignore_permissions=True
-        )
+            # Elevated write is guarded by _require_tracker_write_access above.
+            parent_doc.save(
+                ignore_permissions=True
+            )
 
     # ---------------------------------------------------------
     # Mirror into Support Plan
@@ -1529,8 +1645,6 @@ def save_tracker_matrix_entries(
         participant,
         rows
     )
-
-    frappe.db.commit()
 
     return {
         "status": "success",

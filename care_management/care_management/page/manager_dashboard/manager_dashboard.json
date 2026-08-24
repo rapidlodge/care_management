@@ -10,7 +10,14 @@
  "name": "manager-dashboard",
  "owner": "Administrator",
  "page_name": "manager-dashboard",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Care Manager"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

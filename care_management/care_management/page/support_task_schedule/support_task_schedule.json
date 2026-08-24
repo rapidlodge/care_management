@@ -13,6 +13,15 @@
   "roles": [
     {
       "role": "System Manager"
+    },
+    {
+      "role": "Care Manager"
+    },
+    {
+      "role": "Support Coordinator"
+    },
+    {
+      "role": "Support Worker"
     }
   ],
   "standard": "Yes",
