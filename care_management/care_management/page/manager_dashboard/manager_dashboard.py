@@ -1,5 +1,42 @@
 import frappe
 
+from care_management.care_management import permissions as care_permissions
+
+
+def _manager_user():
+	return care_permissions.require_manager_endpoint_access()
+
+
+def _manager_participants(user, doctype):
+	if care_permissions.is_system_manager(user) or care_permissions.is_administrator(user):
+		return None
+	return care_permissions.get_authorized_participants(user, doctype=doctype)
+
+
+def _require_manager_participant(participant, user, doctype):
+	care_permissions.require_endpoint_participant_access(
+		participant,
+		user=user,
+		doctype=doctype,
+		administrative=care_permissions.is_system_manager(user) or care_permissions.is_administrator(user),
+	)
+
+
+def _execution_participant(execution_instance):
+	participant = care_permissions.resolve_participant(
+		"Support Task Execution Instance",
+		execution_instance,
+	)
+	if not participant:
+		raise frappe.PermissionError
+	return participant
+
+
+def _require_execution_manager_access(execution_instance, user):
+	participant = _execution_participant(execution_instance)
+	_require_manager_participant(participant, user, "Support Task Execution Instance")
+	return participant
+
 
 @frappe.whitelist()
 def get_manager_dashboard_data(
@@ -17,6 +54,8 @@ def get_manager_dashboard_data(
     - Keeps the existing Manager Review business logic as
       the authoritative source for review records.
     """
+
+    user = _manager_user()
 
     if not start_date:
         start_date = frappe.utils.today()
@@ -111,6 +150,8 @@ def get_execution_review_detail(
     searching through the derived Manager Review list.
     """
 
+    user = _manager_user()
+
     if not execution_instance:
 
         frappe.throw(
@@ -145,6 +186,7 @@ def get_execution_review_detail(
         "Support Task Execution Instance",
         execution_instance
     )
+    participant = _require_execution_manager_access(execution.name, user)
 
 
     # ------------------------------------------------------------
@@ -158,12 +200,6 @@ def get_execution_review_detail(
     task = frappe.get_doc(
 		"Support Task",
 		execution.support_task
-	)
-
-    participant = frappe.db.get_value(
-		"Support Plan",
-		task.support_plan,
-		"participant"
 	)
 
     assigned_staff = frappe.get_all(
@@ -229,6 +265,8 @@ def validate_manager_follow_up_decision(
     when required.
     """
 
+    user = _manager_user()
+
     if not execution_instance:
         frappe.throw(
             "Execution Instance is required."
@@ -266,6 +304,7 @@ def validate_manager_follow_up_decision(
         "Support Task Execution Instance",
         execution_instance
     )
+    _require_execution_manager_access(execution.name, user)
 
     manager_notes = (
         manager_notes or ""
@@ -409,6 +448,8 @@ def create_manager_follow_up(
     execution instance.
     """
 
+    user = _manager_user()
+
     if not execution_instance:
         frappe.throw(
             "Execution Instance is required."
@@ -431,18 +472,11 @@ def create_manager_follow_up(
             "Execution record not found."
         )
 
-    if not frappe.has_permission(
-        "Manager Follow-up",
-        "create"
-    ):
-        frappe.throw(
-            "You do not have permission to create Manager Follow-ups."
-        )
-
     execution = frappe.get_doc(
         "Support Task Execution Instance",
         execution_instance
     )
+    _require_execution_manager_access(execution.name, user)
     support_task = frappe.get_doc(
         "Support Task",
         execution.support_task
@@ -583,8 +617,6 @@ def create_manager_follow_up(
         ignore_permissions=False
     )
 
-    frappe.db.commit()
-
     return {
         "created": True,
         "duplicate": False,
@@ -633,13 +665,7 @@ def get_manager_follow_ups(
 	Frappe v16 compatible.
 	"""
 
-	if not frappe.has_permission(
-		"Manager Follow-up",
-		"read"
-	):
-		frappe.throw(
-			"You do not have permission to view Manager Follow-ups."
-		)
+	user = _manager_user()
 
 	# ------------------------------------------------------------
 	# Safe limit
@@ -695,13 +721,19 @@ def get_manager_follow_ups(
 	filters = {
 		"status": status_filter
 	}
+	authorized_participants = _manager_participants(user, "Manager Follow-up")
 
 	# Clean string parameters passed from front-end filters
 	if assigned_to and str(assigned_to).strip():
 		filters["assigned_to"] = str(assigned_to).strip()
 
 	if participant and str(participant).strip():
-		filters["participant"] = str(participant).strip()
+		requested_participant = str(participant).strip()
+		if authorized_participants is not None and requested_participant not in authorized_participants:
+			return []
+		filters["participant"] = requested_participant
+	elif authorized_participants is not None:
+		filters["participant"] = ["in", sorted(authorized_participants)]
 
 	if start_date and end_date:
 
@@ -778,6 +810,8 @@ def update_manager_follow_up(
     Update an existing Manager Follow-up.
     """
 
+    user = _manager_user()
+
     if not follow_up_name:
         frappe.throw(
             "Follow-up is required."
@@ -791,18 +825,11 @@ def update_manager_follow_up(
             "Manager Follow-up not found."
         )
 
-    if not frappe.has_permission(
-        "Manager Follow-up",
-        "write"
-    ):
-        frappe.throw(
-            "You do not have permission to update Manager Follow-ups."
-        )
-
     follow_up = frappe.get_doc(
         "Manager Follow-up",
         follow_up_name
     )
+    _require_manager_participant(follow_up.participant, user, "Manager Follow-up")
 
     if status:
         allowed_statuses = {
@@ -865,8 +892,6 @@ def update_manager_follow_up(
     follow_up.save(
         ignore_permissions=False
     )
-
-    frappe.db.commit()
 
     return {
         "updated": True,
@@ -1045,6 +1070,8 @@ def get_manager_attention_items(
     Manager Dashboard Participant Filter). Leaving it empty preserves
     the exact existing behaviour.
     """
+
+    _manager_user()
 
     if not start_date:
 
@@ -1296,6 +1323,8 @@ def get_manager_review_tasks(
     Support Task Schedule query, which already applies it as a
     `sp.participant = %(participant)s` SQL condition (Change 1).
     """
+
+    _manager_user()
 
     from care_management.care_management.page.support_task_schedule import (
         support_task_schedule

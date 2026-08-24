@@ -13,6 +13,10 @@ SUPPORT_WORKER_ROLE = "Support Worker"
 CARE_MANAGER_ROLES = frozenset({SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE})
 CARE_COORDINATION_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
 SUPPORT_WORKER_ROLES = frozenset({SUPPORT_WORKER_ROLE})
+MANAGER_ENDPOINT_ROLES = frozenset({SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE})
+SCHEDULE_READ_ROLES = frozenset(
+	{SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE, SUPPORT_WORKER_ROLE}
+)
 
 DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 	{
@@ -124,6 +128,75 @@ def require_any_role(roles, user=None):
 	if not has_any_role(roles, user=user):
 		raise frappe.PermissionError
 	return True
+
+
+def is_enabled_system_user(user=None):
+	resolved_user = normalize_user(user)
+	if not resolved_user:
+		return False
+	if resolved_user == "Administrator":
+		return True
+	row = frappe.db.get_value("User", resolved_user, ["enabled", "user_type"], as_dict=True)
+	return bool(row and row.enabled and row.user_type == "System User")
+
+
+def require_enabled_system_user(user=None):
+	resolved_user = normalize_user(user)
+	if not resolved_user or not is_enabled_system_user(resolved_user):
+		raise frappe.PermissionError
+	return resolved_user
+
+
+def require_manager_endpoint_access(user=None):
+	resolved_user = require_enabled_system_user(user)
+	if not has_any_role(MANAGER_ENDPOINT_ROLES, user=resolved_user):
+		raise frappe.PermissionError
+	return resolved_user
+
+
+def require_schedule_read_access(user=None):
+	resolved_user = require_enabled_system_user(user)
+	if not has_any_role(SCHEDULE_READ_ROLES, user=resolved_user):
+		raise frappe.PermissionError
+	return resolved_user
+
+
+def get_authorized_participants(user=None, doctype=None, administrative=False):
+	resolved_user = require_enabled_system_user(user)
+	if administrative and _is_participant_boundary_administrator(resolved_user):
+		return None
+	grants = get_user_participant_grants(resolved_user, applicable_for=doctype)
+	if not grants:
+		raise frappe.PermissionError
+	return frozenset(grants)
+
+
+def require_endpoint_participant_access(participant, user=None, doctype=None, administrative=False):
+	resolved_user = require_enabled_system_user(user)
+	require_participant_access(
+		participant,
+		user=resolved_user,
+		administrative=administrative,
+		applicable_for=doctype,
+	)
+	return resolved_user
+
+
+def require_standard_document_permission(doctype, ptype, doc=None, user=None):
+	resolved_user = require_enabled_system_user(user)
+	if not frappe.has_permission(doctype, ptype, doc=doc, user=resolved_user):
+		raise frappe.PermissionError
+	return resolved_user
+
+
+def task_participant(task):
+	return resolve_participant("Support Task", task)
+
+
+def require_worker_task_action(task, user=None):
+	resolved_user = require_enabled_system_user(user)
+	require_task_action_access(task, user=resolved_user)
+	return resolved_user
 
 
 def get_user_participant_grants(user=None, applicable_for=None):

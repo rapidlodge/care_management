@@ -507,8 +507,14 @@ def _reconcile_tasks(source_doctype, source_docname, plan_name, config, desired)
             frappe.db.set_value("Support Task", e.name, "status", "Archived")
 
 
-@frappe.whitelist()
 def sync_weekly_meal_plan_tasks(participant=None, execution_date=None):
+    return sync_weekly_meal_plan_tasks_internal(
+        participant=participant,
+        execution_date=execution_date,
+    )
+
+
+def sync_weekly_meal_plan_tasks_internal(participant=None, execution_date=None):
     """
     Generates scheduled Support Task Execution Instances for active Weekly Meal Plans.
     Phase B Integration.
@@ -556,5 +562,4 @@ def sync_weekly_meal_plan_tasks(participant=None, execution_date=None):
                 inst.insert(ignore_permissions=True)
                 created_count += 1
 
-    frappe.db.commit()
     return {"status": "success", "created_tasks": created_count}

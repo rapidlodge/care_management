@@ -8,6 +8,7 @@ from frappe.utils import getdate, today, now_datetime
 from care_management.care_management.services.custom_plan_sync_engine import (
     CustomPlanSyncEngine,
 )
+from care_management.care_management import permissions as care_permissions
 
 
 class CustomCarePlan(Document):
@@ -450,22 +451,19 @@ class CustomCarePlan(Document):
     # -------------------------------------------------------------------------
 
     def _check_lifecycle_permission(self):
-        allowed_roles = {
-            "Care Manager",
-            "System Manager",
-            "Administrator",
-        }
-
-        user_roles = set(
-            frappe.get_roles(frappe.session.user)
+        user = care_permissions.require_enabled_system_user()
+        if not care_permissions.has_any_role({"Care Manager", "System Manager"}, user=user):
+            raise frappe.PermissionError
+        care_permissions.require_standard_document_permission(
+            "Custom Care Plan",
+            "write",
+            doc=self,
+            user=user,
         )
-
-        if not user_roles.intersection(allowed_roles):
-            frappe.throw(
-                _(
-                    "Only Care Managers or System Managers are "
-                    "authorized to change the lifecycle state of "
-                    "a Care Plan."
-                ),
-                frappe.PermissionError,
-            )
+        care_permissions.require_endpoint_participant_access(
+            self.participant,
+            user=user,
+            doctype="Custom Care Plan",
+            administrative=care_permissions.is_system_manager(user)
+            or care_permissions.is_administrator(user),
+        )
