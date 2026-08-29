@@ -8,6 +8,18 @@
  "field_order": [
   "participant",
   "week_commencing",
+  "plan_status",
+  "plan_version",
+  "effective_from",
+  "effective_to",
+  "review_date",
+  "previous_plan",
+  "replacement_plan",
+  "approved_by",
+  "approved_on",
+  "purpose_evidence_status",
+  "change_reason",
+  "lifecycle_reason",
   "has_uploaded_medication_purpose_form",
   "section_items",
   "medication_items"
@@ -29,6 +41,79 @@
    "in_list_view": 1,
    "label": "Week Commencing",
    "reqd": 1
+  },
+  {
+   "default": "Needs Review",
+   "fieldname": "plan_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Plan Status",
+   "options": "Needs Review\nDraft\nActive\nSuperseded\nArchived"
+  },
+  {
+   "default": "1",
+   "fieldname": "plan_version",
+   "fieldtype": "Int",
+   "label": "Plan Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From"
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Effective To"
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "Review Date"
+  },
+  {
+   "fieldname": "previous_plan",
+   "fieldtype": "Link",
+   "label": "Previous Medication Plan",
+   "options": "Medication Administration Log"
+  },
+  {
+   "fieldname": "replacement_plan",
+   "fieldtype": "Link",
+   "label": "Replacement Medication Plan",
+   "options": "Medication Administration Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "purpose_evidence_status",
+   "fieldtype": "Select",
+   "label": "Purpose Evidence Status",
+   "options": "Unknown\nNot Required\nRequired\nRecorded"
+  },
+  {
+   "fieldname": "change_reason",
+   "fieldtype": "Small Text",
+   "label": "Change Reason"
+  },
+  {
+   "fieldname": "lifecycle_reason",
+   "fieldtype": "Small Text",
+   "label": "Lifecycle Reason"
   },
   {
    "fieldname": "section_items",
@@ -68,6 +153,20 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Care Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Support Coordinator"
+  },
+  {
+   "read": 1,
+   "role": "Support Worker"
   }
  ],
  "row_format": "Dynamic",

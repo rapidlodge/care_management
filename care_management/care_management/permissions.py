@@ -35,6 +35,7 @@ DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 		"Manager Follow-up": "participant",
 		"Medical Report Summary": "participant",
 		"Medication Administration Log": "participant",
+		"Medication Administration Event": "participant",
 		"Mood Tracker": "participant",
 		"Participant Drug Count": "participant",
 		"Seizure Chart": "participant",
