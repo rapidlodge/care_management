@@ -6,6 +6,9 @@ from frappe.tests import IntegrationTestCase
 from care_management.care_management.tests.helpers import assert_care_doctype_metadata
 
 
+IGNORE_TEST_RECORD_DEPENDENCIES = ["User"]
+
+
 class TestMedicationAdministrationLog(IntegrationTestCase):
 	def test_doctype_metadata(self):
 		assert_care_doctype_metadata(self, "Medication Administration Log")

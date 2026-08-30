@@ -1,0 +1,226 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "MED-EVENT-.YYYY.-.#####",
+ "creation": "2026-08-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "medication_plan",
+  "medication_plan_item",
+  "support_task",
+  "execution_instance",
+  "scheduled_datetime",
+  "actual_datetime",
+  "worker",
+  "finalized_by",
+  "finalized_on",
+  "administrative_override_reason",
+  "occurrence_key",
+  "prescribed_dose",
+  "administered_dose",
+  "dose_unit",
+  "route",
+  "outcome",
+  "variance_reason",
+  "notes",
+  "checker",
+  "prn_indication",
+  "prn_effectiveness_notes",
+  "incident",
+  "correction_source",
+  "correction_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "medication_plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Medication Plan",
+   "options": "Medication Administration Log",
+   "reqd": 1
+  },
+  {
+   "fieldname": "medication_plan_item",
+   "fieldtype": "Data",
+   "label": "Medication Plan Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "support_task",
+   "fieldtype": "Link",
+   "label": "Support Task",
+   "options": "Support Task"
+  },
+  {
+   "fieldname": "execution_instance",
+   "fieldtype": "Link",
+   "label": "Support Task Execution Instance",
+   "options": "Support Task Execution Instance"
+  },
+  {
+   "fieldname": "scheduled_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Authoritative Scheduled Datetime",
+   "reqd": 1
+  },
+  {
+   "fieldname": "actual_datetime",
+   "fieldtype": "Datetime",
+   "label": "Actual Administration Datetime"
+  },
+  {
+   "fieldname": "worker",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Worker",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "finalized_by",
+   "fieldtype": "Link",
+   "label": "Finalized By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finalized_on",
+   "fieldtype": "Datetime",
+   "label": "Finalized On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "administrative_override_reason",
+   "fieldtype": "Small Text",
+   "label": "Administrative Override Reason"
+  },
+  {
+   "fieldname": "occurrence_key",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Occurrence Key",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "prescribed_dose",
+   "fieldtype": "Data",
+   "label": "Prescribed Dose"
+  },
+  {
+   "fieldname": "administered_dose",
+   "fieldtype": "Data",
+   "label": "Administered Dose"
+  },
+  {
+   "fieldname": "dose_unit",
+   "fieldtype": "Data",
+   "label": "Dose Unit"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Select",
+   "label": "Route",
+   "options": "Oral\nTopical\nInjection\nInhaled\nOther"
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "\nAdministered\nRefused\nMissed\nWithheld\nNot Available\nError"
+  },
+  {
+   "fieldname": "variance_reason",
+   "fieldtype": "Small Text",
+   "label": "Variance Reason"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "checker",
+   "fieldtype": "Link",
+   "label": "Checker / Witness",
+   "options": "User"
+  },
+  {
+   "fieldname": "prn_indication",
+   "fieldtype": "Small Text",
+   "label": "PRN Indication"
+  },
+  {
+   "fieldname": "prn_effectiveness_notes",
+   "fieldtype": "Small Text",
+   "label": "PRN Effectiveness Notes"
+  },
+  {
+   "fieldname": "incident",
+   "fieldtype": "Link",
+   "label": "Linked Incident",
+   "options": "Incident"
+  },
+  {
+   "fieldname": "correction_source",
+   "fieldtype": "Link",
+   "label": "Correction Source",
+   "options": "Medication Administration Event"
+  },
+  {
+   "fieldname": "correction_reason",
+   "fieldtype": "Small Text",
+   "label": "Correction Reason"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-08-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Medication Administration Event",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Support Worker",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Care Manager"
+  },
+  {
+   "read": 1,
+   "role": "Support Coordinator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "scheduled_datetime",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

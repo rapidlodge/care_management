@@ -5,11 +5,25 @@
   "engine": "InnoDB",
   "field_order": [
     "medication_name",
+    "medication_form",
+    "strength",
     "dosage",
+    "prescribed_dose",
+    "dose_unit",
     "route",
     "column_break_1",
     "time_slot",
+    "scheduled_time",
+    "frequency",
+    "indication",
+    "prescriber",
+    "pharmacy",
     "is_prn",
+    "is_controlled_drug",
+    "is_active",
+    "prn_indication",
+    "prn_minimum_interval_hours",
+    "prn_maximum_dose",
     "section_days",
     "monday",
     "tuesday",
@@ -20,7 +34,10 @@
     "saturday",
     "sunday",
     "section_notes",
-    "instructions"
+    "instructions",
+    "storage_instructions",
+    "side_effects",
+    "escalation_instructions"
   ],
   "fields": [
     {
@@ -31,10 +48,30 @@
       "reqd": 1
     },
     {
+      "fieldname": "medication_form",
+      "fieldtype": "Data",
+      "label": "Medication Form"
+    },
+    {
+      "fieldname": "strength",
+      "fieldtype": "Data",
+      "label": "Strength"
+    },
+    {
       "fieldname": "dosage",
       "fieldtype": "Data",
       "in_list_view": 1,
       "label": "Dosage"
+    },
+    {
+      "fieldname": "prescribed_dose",
+      "fieldtype": "Data",
+      "label": "Prescribed Dose"
+    },
+    {
+      "fieldname": "dose_unit",
+      "fieldtype": "Data",
+      "label": "Dose Unit"
     },
     {
       "fieldname": "route",
@@ -55,10 +92,62 @@
       "reqd": 1
     },
     {
+      "fieldname": "scheduled_time",
+      "fieldtype": "Time",
+      "label": "Authoritative Scheduled Time"
+    },
+    {
+      "fieldname": "frequency",
+      "fieldtype": "Data",
+      "label": "Frequency"
+    },
+    {
+      "fieldname": "indication",
+      "fieldtype": "Small Text",
+      "label": "Indication / Purpose"
+    },
+    {
+      "fieldname": "prescriber",
+      "fieldtype": "Data",
+      "label": "Prescriber"
+    },
+    {
+      "fieldname": "pharmacy",
+      "fieldtype": "Data",
+      "label": "Pharmacy"
+    },
+    {
       "default": "0",
       "fieldname": "is_prn",
       "fieldtype": "Check",
       "label": "PRN / As Needed (not auto-scheduled)"
+    },
+    {
+      "default": "0",
+      "fieldname": "is_controlled_drug",
+      "fieldtype": "Check",
+      "label": "Controlled Drug"
+    },
+    {
+      "default": "1",
+      "fieldname": "is_active",
+      "fieldtype": "Check",
+      "label": "Active"
+    },
+    {
+      "fieldname": "prn_indication",
+      "fieldtype": "Small Text",
+      "label": "PRN Indication"
+    },
+    {
+      "fieldname": "prn_minimum_interval_hours",
+      "fieldtype": "Int",
+      "label": "PRN Minimum Interval Hours"
+    },
+    {
+      "fieldname": "prn_maximum_dose",
+      "fieldtype": "Data",
+      "label": "PRN Maximum Dose"
     },
     {
       "fieldname": "section_days",
@@ -120,6 +209,21 @@
       "fieldname": "instructions",
       "fieldtype": "Small Text",
       "label": "Instructions"
+    },
+    {
+      "fieldname": "storage_instructions",
+      "fieldtype": "Small Text",
+      "label": "Storage Instructions"
+    },
+    {
+      "fieldname": "side_effects",
+      "fieldtype": "Small Text",
+      "label": "Side Effects / Observation Instructions"
+    },
+    {
+      "fieldname": "escalation_instructions",
+      "fieldtype": "Small Text",
+      "label": "Emergency / Escalation Instructions"
     }
   ],
   "istable": 1,

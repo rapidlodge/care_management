@@ -13,6 +13,44 @@ from care_management.care_management.tests.helpers import (
 )
 
 
+EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
+	{
+		"Appointment Schedule",
+		"Custom Care Plan",
+		"Daily Bowel Record Chart",
+		"Daily Cleaning Task Checklist",
+		"Daily Food Diary",
+		"Daily Shift Task Checklist",
+		"Discarded Medication Register",
+		"Epilepsy Management Plan",
+		"Falls Risk Plan",
+		"Fluid Intake Output Chart",
+		"Hospital Support Plan",
+		"Incident",
+		"Manager Follow-up",
+		"Medical Report Summary",
+		"Medication Administration Event",
+		"Medication Administration Log",
+		"Mood Tracker",
+		"Participant Drug Count",
+		"Participant Profile",
+		"Seizure Chart",
+		"Shift Handover Item",
+		"Shift Medication Check",
+		"Shower Chart",
+		"Skin Integrity Form",
+		"Sleep Tracker",
+		"Support Plan",
+		"Support Task",
+		"Support Task Delivery Log",
+		"Support Task Execution Instance",
+		"Support Task Missed Log",
+		"Weekly Exercise Record",
+		"Weekly Meal Planner",
+	}
+)
+
+
 class TestParticipantPermissionHooks(IntegrationTestCase):
 	def setUp(self):
 		super().setUp()
@@ -117,15 +155,17 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			)
 		self.assertEqual({row.name for row in rows}, {names[0]})
 
-	def test_hooks_register_exactly_31_query_targets(self):
+	def test_hooks_register_exactly_32_query_targets(self):
 		import care_management.hooks as hooks
 
-		self.assertEqual(len(hooks.permission_query_conditions), 31)
+		self.assertEqual(set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
+		self.assertEqual(len(hooks.permission_query_conditions), 32)
 
-	def test_hooks_register_exactly_31_document_targets(self):
+	def test_hooks_register_exactly_32_document_targets(self):
 		import care_management.hooks as hooks
 
-		self.assertEqual(len(hooks.has_permission), 31)
+		self.assertEqual(set(hooks.has_permission), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
+		self.assertEqual(len(hooks.has_permission), 32)
 
 	def test_no_wildcard_permission_hooks_are_registered(self):
 		import care_management.hooks as hooks
@@ -152,8 +192,11 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 
 		self.assertEqual(set(hooks.doc_events["DocShare"]), {"validate"})
 
-	def test_protected_doctype_count_is_31(self):
-		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 31)
+	def test_protected_doctype_inventory_is_exact(self):
+		self.assertEqual(permissions.PROTECTED_PARTICIPANT_DOCTYPES, EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
+		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 32)
+		self.assertIn("Medication Administration Event", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
+		self.assertNotIn("Medication Competency", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 
 	def test_participant_profile_document_allowed_by_grant(self):
 		self.assert_document_allowed("Participant Profile", self.participant_a, self.care_manager)
@@ -381,6 +424,13 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			permissions.get_participant_permission_query_conditions("Support Plan", user=self.worker),
 			"1=0",
 		)
+		condition = permissions.get_participant_permission_query_conditions(
+			"Medication Administration Event",
+			user=self.worker,
+		)
+		self.assertIn("`tabMedication Administration Event`.`participant`", condition)
+		self.assertIn(self.participant_a, condition)
+		self.assertNotIn(self.participant_b, condition)
 
 	def test_query_condition_for_unmapped_user_is_fail_closed(self):
 		self.assertEqual(
