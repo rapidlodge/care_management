@@ -424,6 +424,13 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			permissions.get_participant_permission_query_conditions("Support Plan", user=self.worker),
 			"1=0",
 		)
+		condition = permissions.get_participant_permission_query_conditions(
+			"Medication Administration Event",
+			user=self.worker,
+		)
+		self.assertIn("`tabMedication Administration Event`.`participant`", condition)
+		self.assertIn(self.participant_a, condition)
+		self.assertNotIn(self.participant_b, condition)
 
 	def test_query_condition_for_unmapped_user_is_fail_closed(self):
 		self.assertEqual(

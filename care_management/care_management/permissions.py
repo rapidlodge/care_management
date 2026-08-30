@@ -80,6 +80,7 @@ PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 )
 
 STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
+SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset({"Medication Administration Event"})
 
 MAX_RESOLUTION_DEPTH = 8
 
@@ -396,8 +397,13 @@ def _is_participant_boundary_administrator(user):
 	return is_administrator(user) or is_system_manager(user)
 
 
-def _has_standard_participant_document_role(user):
-	return has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=user)
+def _has_participant_document_role(doctype, user):
+	if has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=user):
+		return True
+	return doctype in SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES and has_any_role(
+		SUPPORT_WORKER_ROLES,
+		user=user,
+	)
 
 
 def _doc_doctype(doc):
@@ -434,7 +440,7 @@ def has_participant_document_permission(doc, ptype=None, user=None, debug=False)
 		return False
 	if _is_participant_boundary_administrator(resolved_user):
 		return True
-	if not _has_standard_participant_document_role(resolved_user):
+	if not _has_participant_document_role(doctype, resolved_user):
 		return False
 	if doctype == "Participant Profile" and str(ptype or "").strip().lower() == "create":
 		return True
@@ -516,7 +522,7 @@ def get_participant_permission_query_conditions(doctype, user=None):
 		return "1=0"
 	if _is_participant_boundary_administrator(resolved_user):
 		return ""
-	if not _has_standard_participant_document_role(resolved_user):
+	if not _has_participant_document_role(doctype, resolved_user):
 		return "1=0"
 	grants = get_user_participant_grants(resolved_user, applicable_for=doctype)
 	return _participant_query_condition(doctype, grants)

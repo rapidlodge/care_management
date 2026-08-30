@@ -943,10 +943,45 @@ class TestMedicationSafeguardingFoundation(IntegrationTestCase):
 			event.submit()
 		self._competency(self.worker)
 		task = self._medication_task(plan, self.worker, "T019")
-		worker_event = self._event(plan=plan, worker=self.worker, task=task, scheduled_datetime=f"{add_days(nowdate(), 1)} 08:00:00").insert(ignore_permissions=True)
 		with self._as_user(self.worker):
+			worker_event = self._event(
+				plan=plan,
+				worker=self.worker,
+				task=task,
+				scheduled_datetime=f"{add_days(nowdate(), 1)} 08:00:00",
+			).insert()
+			self.assertFalse(worker_event.flags.ignore_permissions)
 			worker_event.submit()
 		self.assertEqual(worker_event.finalized_by, self.worker)
+		cross_plan = self._active_plan(participant=self.participant_b, label="T019 Cross")
+		cross_event = self._event(
+			plan=cross_plan,
+			worker=self.worker,
+			task=None,
+			scheduled_datetime=f"{add_days(nowdate(), 12)} 08:00:00",
+		)
+		with self._as_user(self.worker), self.assertRaises(frappe.PermissionError):
+			cross_event.insert()
+		event_b = self._event(
+			plan=cross_plan,
+			worker=self.worker_b,
+			task=None,
+			scheduled_datetime=f"{add_days(nowdate(), 12)} 08:00:00",
+		).insert(ignore_permissions=True)
+		with self._as_user(self.worker):
+			self.assertTrue(
+				frappe.has_permission("Medication Administration Event", "read", doc=worker_event)
+			)
+			self.assertFalse(
+				frappe.has_permission("Medication Administration Event", "read", doc=event_b)
+			)
+			rows = frappe.get_list(
+				"Medication Administration Event",
+				fields=["name"],
+				filters={"name": ["in", [worker_event.name, event_b.name]]},
+				limit=10,
+			)
+		self.assertEqual({row.name for row in rows}, {worker_event.name})
 		self._competency(self.worker_b)
 		_grant(self.worker_b, self.participant_a)
 		spoof = self._event(plan=plan, worker=self.worker_b, task=None, scheduled_datetime=f"{add_days(nowdate(), 2)} 08:00:00").insert(ignore_permissions=True)
