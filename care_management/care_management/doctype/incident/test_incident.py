@@ -7,6 +7,7 @@ from care_management.care_management.tests.helpers import assert_care_doctype_me
 
 IGNORE_TEST_RECORD_DEPENDENCIES = [
 	"Incident",
+	"Medication Administration Event",
 	"Participant Profile",
 	"User",
 ]

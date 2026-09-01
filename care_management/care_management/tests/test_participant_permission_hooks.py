@@ -31,6 +31,8 @@ EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 		"Medical Report Summary",
 		"Medication Administration Event",
 		"Medication Administration Log",
+		"Medication PRN Effectiveness Review",
+		"Controlled Medication Transaction",
 		"Mood Tracker",
 		"Participant Drug Count",
 		"Participant Profile",
@@ -155,17 +157,17 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			)
 		self.assertEqual({row.name for row in rows}, {names[0]})
 
-	def test_hooks_register_exactly_32_query_targets(self):
+	def test_hooks_register_exactly_34_query_targets(self):
 		import care_management.hooks as hooks
 
 		self.assertEqual(set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(hooks.permission_query_conditions), 32)
+		self.assertEqual(len(hooks.permission_query_conditions), 34)
 
-	def test_hooks_register_exactly_32_document_targets(self):
+	def test_hooks_register_exactly_34_document_targets(self):
 		import care_management.hooks as hooks
 
 		self.assertEqual(set(hooks.has_permission), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(hooks.has_permission), 32)
+		self.assertEqual(len(hooks.has_permission), 34)
 
 	def test_no_wildcard_permission_hooks_are_registered(self):
 		import care_management.hooks as hooks
@@ -194,7 +196,7 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 
 	def test_protected_doctype_inventory_is_exact(self):
 		self.assertEqual(permissions.PROTECTED_PARTICIPANT_DOCTYPES, EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 32)
+		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 34)
 		self.assertIn("Medication Administration Event", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 		self.assertNotIn("Medication Competency", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 

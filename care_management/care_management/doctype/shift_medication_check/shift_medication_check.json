@@ -1,95 +1,202 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "MED-CHK-.YYYY.-.#####",
-  "creation": "2026-08-02 12:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "participant",
-    "date_of_birth",
-    "month",
-    "column_break_1",
-    "address",
-    "medications",
-    "section_entries",
-    "check_entries"
-  ],
-  "fields": [
-    {
-      "fieldname": "participant",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "label": "Resident Name",
-      "options": "Participant Profile",
-      "reqd": 1
-    },
-    {
-      "fetch_from": "participant.date_of_birth",
-      "fieldname": "date_of_birth",
-      "fieldtype": "Date",
-      "label": "DOB",
-      "read_only": 1
-    },
-    {
-      "fieldname": "month",
-      "fieldtype": "Select",
-      "in_list_view": 1,
-      "label": "Month",
-      "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
-      "reqd": 1
-    },
-    {
-      "fieldname": "column_break_1",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "address",
-      "fieldtype": "Small Text",
-      "label": "Address"
-    },
-    {
-      "fieldname": "medications",
-      "fieldtype": "Small Text",
-      "label": "Medications Summary"
-    },
-    {
-      "fieldname": "section_entries",
-      "fieldtype": "Section Break",
-      "label": "Daily Shift Medication Handover Checks"
-    },
-    {
-      "fieldname": "check_entries",
-      "fieldtype": "Table",
-      "label": "Shift Medication Checks",
-      "options": "Shift Medication Check Entry",
-      "reqd": 1
-    }
-  ],
-  "index_web_pages_for_search": 1,
-  "links": [],
-  "modified": "2026-08-02 12:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Care Management",
-  "name": "Shift Medication Check",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "write": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "MED-CHK-.YYYY.-.#####",
+ "creation": "2026-08-02 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "checked_by",
+  "date_of_birth",
+  "month",
+  "column_break_1",
+  "address",
+  "medications",
+  "reconciliation",
+  "finalized_by",
+  "finalized_on",
+  "section_entries",
+  "check_entries"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resident Name",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "checked_by",
+   "fieldtype": "Link",
+   "label": "Checked By",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "DOB",
+   "read_only": 1
+  },
+  {
+   "fieldname": "month",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Month",
+   "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "medications",
+   "fieldtype": "Small Text",
+   "label": "Medications Summary"
+  },
+  {
+   "fieldname": "reconciliation",
+   "fieldtype": "Link",
+   "label": "Participant Drug Count Reconciliation",
+   "options": "Participant Drug Count"
+  },
+  {
+   "fieldname": "finalized_by",
+   "fieldtype": "Link",
+   "label": "Finalized By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finalized_on",
+   "fieldtype": "Datetime",
+   "label": "Finalized On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_entries",
+   "fieldtype": "Section Break",
+   "label": "Daily Shift Medication Handover Checks"
+  },
+  {
+   "fieldname": "check_entries",
+   "fieldtype": "Table",
+   "label": "Shift Medication Checks",
+   "options": "Shift Medication Check Entry",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Shift Medication Check",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Care Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Coordinator",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Worker",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 0,
+   "report": 0,
+   "share": 0,
+   "print": 1,
+   "email": 0,
+   "import": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "is_submittable": 1
 }

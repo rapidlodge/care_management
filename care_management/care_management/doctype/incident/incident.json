@@ -37,7 +37,8 @@
   "section_linked_incidents",
   "linked_incidents",
   "linked_date",
-  "linked_comment"
+  "linked_comment",
+  "linked_medication_event"
  ],
  "fields": [
   {
@@ -112,7 +113,7 @@
    "fieldname": "incident_type",
    "fieldtype": "Select",
    "label": "Incident Type",
-   "options": "Aggression\nBehavioral\nInjury / Medical\nMedication Error\nProperty Damage\nAbsence / Missing Person\nOther",
+   "options": "Aggression\nBehavioral\nInjury / Medical\nMedication Error\nProperty Damage\nAbsence / Missing Person\nOther\nAdverse Medication Reaction",
    "reqd": 1
   },
   {
@@ -176,19 +177,19 @@
    "fieldname": "reportable_to_commission",
    "fieldtype": "Select",
    "label": "Do you think this incident is reportable to the Commission or other?",
-   "options": "Select\nYes\nNo\nUnder Review"
+   "options": "\nSelect\nYes\nNo\nUnder Review"
   },
   {
    "fieldname": "consequence_manager",
    "fieldtype": "Select",
    "label": "Consequence (manager)",
-   "options": "Minor\nModerate\nMajor\nCatastrophic"
+   "options": "\nMinor\nModerate\nMajor\nCatastrophic"
   },
   {
    "fieldname": "is_this_likely_to_attract_media_attention",
    "fieldtype": "Select",
    "label": "Is this likely to attract media attention",
-   "options": "Select\nYes\nNo\nUnsure"
+   "options": "\nSelect\nYes\nNo\nUnsure"
   },
   {
    "fieldname": "column_break_manager",
@@ -204,7 +205,7 @@
    "fieldname": "likelihood_manager",
    "fieldtype": "Select",
    "label": "Likelihood (manager)",
-   "options": "Rare\nUnlikely\nPossible\nLikely\nAlmost Certain"
+   "options": "\nRare\nUnlikely\nPossible\nLikely\nAlmost Certain"
   },
   {
    "fieldname": "section_linked_incidents",
@@ -226,6 +227,12 @@
    "fieldname": "linked_comment",
    "fieldtype": "Small Text",
    "label": "Link Comment"
+  },
+  {
+   "fieldname": "linked_medication_event",
+   "fieldtype": "Link",
+   "label": "Linked Medication Event",
+   "options": "Medication Administration Event"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -238,16 +245,92 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
    "create": 1,
    "delete": 1,
-   "email": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
    "export": 1,
-   "print": 1,
-   "read": 1,
    "report": 1,
-   "role": "System Manager",
    "share": 1,
-   "write": 1
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Care Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Coordinator",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Worker",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 0,
+   "report": 0,
+   "share": 0,
+   "print": 1,
+   "email": 0,
+   "import": 0
   }
  ],
  "row_format": "Dynamic",

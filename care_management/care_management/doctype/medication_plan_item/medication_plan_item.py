@@ -3,6 +3,8 @@
 
 from frappe.model.document import Document
 import frappe
+from decimal import Decimal, InvalidOperation
+
 from frappe.utils import get_datetime, getdate, to_timedelta
 
 
@@ -28,6 +30,7 @@ PROTECTED_HISTORY_FIELDS = (
 	"prn_indication",
 	"prn_minimum_interval_hours",
 	"prn_maximum_dose",
+	"prn_review_due_minutes",
 	*WEEKDAY_FIELDS,
 	"instructions",
 	"storage_instructions",
@@ -41,15 +44,50 @@ def validate_active_medication_plan_item(row):
 		if not row.get(fieldname):
 			frappe.throw("Active medication items require complete safe-use information.", frappe.ValidationError)
 	if row.get("is_prn"):
-		frappe.throw("PRN medication controls are not enabled in R3C.1.", frappe.ValidationError)
-	if row.get("is_controlled_drug"):
-		frappe.throw("Controlled-drug controls are not enabled in R3C.1.", frappe.ValidationError)
-	if row.route in {"Injection", "Inhaled"}:
-		frappe.throw("Specialist-route competency controls are not enabled in R3C.1.", frappe.ValidationError)
+		_validate_prn_controls(row)
+	if row.route == "Other":
+		frappe.throw("Other medication route requires an explicit supported competency mapping.", frappe.ValidationError)
 	if row.frequency == "Selected Days" and not any(row.get(day) for day in WEEKDAY_FIELDS):
 		frappe.throw("Selected-day medication items require at least one selected weekday.", frappe.ValidationError)
 	if row.frequency not in {"Daily", "Selected Days"}:
 		frappe.throw("Unknown medication frequency is not safe to activate.", frappe.ValidationError)
+
+
+def _positive_decimal(value, message):
+	try:
+		amount = Decimal(str(value))
+	except (InvalidOperation, TypeError, ValueError):
+		frappe.throw(message, frappe.ValidationError)
+	if amount <= 0:
+		frappe.throw(message, frappe.ValidationError)
+	return amount
+
+
+def _validate_prn_controls(row):
+	if not row.get("prn_indication"):
+		frappe.throw("PRN medication requires an indication.", frappe.ValidationError)
+	if not row.get("prn_minimum_interval_hours") or int(row.get("prn_minimum_interval_hours") or 0) <= 0:
+		frappe.throw("PRN medication requires a positive minimum interval.", frappe.ValidationError)
+	_positive_decimal(row.get("prn_maximum_dose"), "PRN medication requires a positive maximum dose.")
+	if not row.get("prn_review_due_minutes") or int(row.get("prn_review_due_minutes") or 0) <= 0:
+		frappe.throw("PRN medication requires a positive effectiveness review due time.", frappe.ValidationError)
+
+
+def competency_types_for_plan_item(row):
+	requirements = ["General Medication"]
+	if row.get("is_prn"):
+		requirements.append("PRN Medication")
+	if row.get("is_controlled_drug"):
+		requirements.append("Controlled Medication")
+	if row.route == "Topical":
+		requirements.append("Topical Medication")
+	elif row.route == "Injection":
+		requirements.append("Injection")
+	elif row.route == "Inhaled":
+		requirements.append("Inhaled Medication")
+	elif row.route == "Other":
+		frappe.throw("Other medication route requires an explicit supported competency mapping.", frappe.ValidationError)
+	return tuple(requirements)
 
 
 def validate_active_medication_plan_items(rows):

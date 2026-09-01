@@ -1,5 +1,7 @@
 """Participant authorization foundation for Care Management."""
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from types import MappingProxyType
 
 import frappe
@@ -36,6 +38,8 @@ DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 		"Medical Report Summary": "participant",
 		"Medication Administration Log": "participant",
 		"Medication Administration Event": "participant",
+		"Medication PRN Effectiveness Review": "participant",
+		"Controlled Medication Transaction": "participant",
 		"Mood Tracker": "participant",
 		"Participant Drug Count": "participant",
 		"Seizure Chart": "participant",
@@ -80,9 +84,22 @@ PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 )
 
 STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
-SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset({"Medication Administration Event"})
+SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset(
+	{
+		"Medication Administration Event",
+		"Medication PRN Effectiveness Review",
+		"Participant Drug Count",
+		"Shift Medication Check",
+		"Discarded Medication Register",
+		"Incident",
+	}
+)
 
 MAX_RESOLUTION_DEPTH = 8
+_CONTROLLED_TRANSACTION_SOURCE_CONTEXT = ContextVar(
+	"care_management_controlled_transaction_source_context",
+	default=None,
+)
 
 
 def _get_session_user():
@@ -393,6 +410,24 @@ def require_task_action_access(task, user=None):
 	return True
 
 
+@contextmanager
+def controlled_transaction_source_context(source):
+	"""Authorize one nested controlled-transaction source workflow."""
+	token = _CONTROLLED_TRANSACTION_SOURCE_CONTEXT.set(frappe._dict(source or {}))
+	try:
+		yield
+	finally:
+		_CONTROLLED_TRANSACTION_SOURCE_CONTEXT.reset(token)
+
+
+def get_controlled_transaction_source_context():
+	return _CONTROLLED_TRANSACTION_SOURCE_CONTEXT.get()
+
+
+def has_controlled_transaction_source_context():
+	return bool(get_controlled_transaction_source_context())
+
+
 def _is_participant_boundary_administrator(user):
 	return is_administrator(user) or is_system_manager(user)
 
@@ -434,21 +469,99 @@ def _resolve_protected_document_participant(doctype, doc):
 def has_participant_document_permission(doc, ptype=None, user=None, debug=False):
 	doctype = _doc_doctype(doc)
 	resolved_user = normalize_user(user)
+	permission_type = str(ptype or "read").strip().lower()
 	if not doctype or doctype not in PROTECTED_PARTICIPANT_DOCTYPES:
 		return False
 	if not resolved_user:
 		return False
 	if _is_participant_boundary_administrator(resolved_user):
 		return True
-	if not _has_participant_document_role(doctype, resolved_user):
+	source_controlled_write = (
+		doctype == "Controlled Medication Transaction"
+		and permission_type in {"create", "write", "submit"}
+		and has_controlled_transaction_source_context()
+	)
+	if not source_controlled_write and not _has_participant_document_role(doctype, resolved_user):
 		return False
-	if doctype == "Participant Profile" and str(ptype or "").strip().lower() == "create":
+	if doctype == "Controlled Medication Transaction":
+		if (
+			not source_controlled_write
+			and has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user)
+			and not has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=resolved_user)
+		):
+			return False
+	if doctype == "Participant Profile" and permission_type == "create":
 		return True
+	if (
+		not source_controlled_write
+		and has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user)
+		and not has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=resolved_user)
+	):
+		if not _support_worker_document_permission_allowed(doctype, doc, permission_type, resolved_user):
+			return False
 
 	participant = _resolve_protected_document_participant(doctype, doc)
 	if not participant:
 		return False
-	return has_participant_access(participant, user=resolved_user, applicable_for=doctype)
+	applicable_for = doctype
+	if source_controlled_write:
+		context = get_controlled_transaction_source_context()
+		applicable_for = context.get("source_doctype") if context else doctype
+	return has_participant_access(participant, user=resolved_user, applicable_for=applicable_for)
+
+
+def _support_worker_document_permission_allowed(doctype, doc, permission_type, user):
+	if doctype == "Medication Administration Event":
+		return permission_type in {"create", "read", "select", "write", "submit"}
+	if doctype == "Medication PRN Effectiveness Review":
+		if permission_type == "create":
+			return True
+		if permission_type in {"create", "read", "select", "write"}:
+			return _prn_review_owned_by_worker(doc, user)
+		return False
+	if doctype in {"Participant Drug Count", "Shift Medication Check", "Discarded Medication Register"}:
+		if permission_type == "create":
+			return True
+		return permission_type in {"create", "read", "select", "write"} and _draft_owned_by_worker(
+			doctype, doc, user
+		)
+	if doctype == "Incident":
+		if permission_type == "create":
+			return True
+		return permission_type in {"read", "select", "write"} and _incident_owned_by_reporter(doc, user)
+	return False
+
+
+def _prn_review_owned_by_worker(doc, user):
+	name = _doc_name(doc)
+	if not name:
+		return False
+	if isinstance(doc, str):
+		return frappe.db.get_value("Medication PRN Effectiveness Review", name, "administering_worker") == user
+	return _field_value("Medication PRN Effectiveness Review", doc, "administering_worker") == user
+
+
+def _draft_owned_by_worker(doctype, doc, user):
+	name = _doc_name(doc)
+	if not name:
+		return False
+	owner_field = {
+		"Participant Drug Count": "observed_by",
+		"Shift Medication Check": "checked_by",
+		"Discarded Medication Register": "prepared_by",
+	}.get(doctype)
+	if not owner_field:
+		return False
+	row = frappe.db.get_value(doctype, name, [owner_field, "docstatus"], as_dict=True)
+	return bool(row and row.get(owner_field) == user and row.docstatus == 0)
+
+
+def _incident_owned_by_reporter(doc, user):
+	name = _doc_name(doc)
+	if not name:
+		return False
+	row = frappe.db.get_value("Incident", name, ["reported_by", "incident_status"], as_dict=True)
+	return bool(row and row.reported_by == user and row.incident_status == "Open")
 
 
 def _sql_table(doctype):
@@ -525,7 +638,35 @@ def get_participant_permission_query_conditions(doctype, user=None):
 	if not _has_participant_document_role(doctype, resolved_user):
 		return "1=0"
 	grants = get_user_participant_grants(resolved_user, applicable_for=doctype)
-	return _participant_query_condition(doctype, grants)
+	base_condition = _participant_query_condition(doctype, grants)
+	if has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES, user=resolved_user
+	):
+		worker_condition = _support_worker_query_condition(doctype, resolved_user)
+		if worker_condition is None:
+			return "1=0"
+		if worker_condition == "":
+			return base_condition
+		return f"({base_condition}) and ({worker_condition})"
+	return base_condition
+
+
+def _support_worker_query_condition(doctype, user):
+	table = _sql_table(doctype)
+	escaped_user = _sql_value(user)
+	if doctype == "Medication Administration Event":
+		return ""
+	if doctype == "Medication PRN Effectiveness Review":
+		return f"{table}.`administering_worker` = {escaped_user}"
+	if doctype == "Participant Drug Count":
+		return f"{table}.`observed_by` = {escaped_user} and {table}.`docstatus` = 0"
+	if doctype == "Shift Medication Check":
+		return f"{table}.`checked_by` = {escaped_user} and {table}.`docstatus` = 0"
+	if doctype == "Discarded Medication Register":
+		return f"{table}.`prepared_by` = {escaped_user} and {table}.`docstatus` = 0"
+	if doctype == "Incident":
+		return f"{table}.`reported_by` = {escaped_user} and {table}.`incident_status` = 'Open'"
+	return None
 
 
 def permission_query_condition_method_name(doctype):

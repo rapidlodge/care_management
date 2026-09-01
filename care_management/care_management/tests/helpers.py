@@ -514,3 +514,33 @@ def ensure_r2c3b_custom_care_plan(participant, label, status="Draft", supervisor
 	)
 	doc.insert(ignore_permissions=True)
 	return doc.name
+
+
+def make_r3c2_user_permission(user, participant, applicable_for):
+	return ensure_r2c1_user_permission(user, participant, applicable_for=applicable_for)
+
+
+def r3c2_prn_item_payload(label="PRN", controlled=False, route="Oral"):
+	return {
+		"medication_name": f"R3C2 {label} Medication",
+		"prescribed_dose": "1",
+		"dose_unit": "tablet",
+		"route": route,
+		"time_slot": "8 AM",
+		"scheduled_time": "08:00:00",
+		"frequency": "Daily",
+		"indication": "R3C2 scheduled purpose",
+		"is_prn": 1,
+		"is_controlled_drug": 1 if controlled else 0,
+		"is_active": 1,
+		"prn_indication": "R3C2 PRN indication",
+		"prn_minimum_interval_hours": 4,
+		"prn_maximum_dose": "2",
+		"prn_review_due_minutes": 60,
+	}
+
+
+def r3c2_controlled_item_payload(label="Controlled", route="Oral"):
+	data = r3c2_prn_item_payload(label=label, controlled=True, route=route)
+	data["is_prn"] = 0
+	return data

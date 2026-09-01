@@ -27,6 +27,10 @@
   "notes",
   "checker",
   "prn_indication",
+  "is_prn_snapshot",
+  "is_controlled_drug_snapshot",
+  "prn_review_due_at",
+  "controlled_transaction",
   "prn_effectiveness_notes",
   "incident",
   "correction_source",
@@ -138,7 +142,7 @@
    "fieldname": "outcome",
    "fieldtype": "Select",
    "label": "Outcome",
-   "options": "\nAdministered\nRefused\nMissed\nWithheld\nNot Available\nError"
+   "options": "\nAdministered\nRefused\nMissed\nWithheld\nNot Available\nError\nAdverse Reaction"
   },
   {
    "fieldname": "variance_reason",
@@ -160,6 +164,31 @@
    "fieldname": "prn_indication",
    "fieldtype": "Small Text",
    "label": "PRN Indication"
+  },
+  {
+   "fieldname": "is_prn_snapshot",
+   "fieldtype": "Check",
+   "label": "PRN Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_controlled_drug_snapshot",
+   "fieldtype": "Check",
+   "label": "Controlled Drug Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "prn_review_due_at",
+   "fieldtype": "Datetime",
+   "label": "PRN Review Due At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "controlled_transaction",
+   "fieldtype": "Link",
+   "label": "Controlled Transaction",
+   "options": "Controlled Medication Transaction",
+   "read_only": 1
   },
   {
    "fieldname": "prn_effectiveness_notes",

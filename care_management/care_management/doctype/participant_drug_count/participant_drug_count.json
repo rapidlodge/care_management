@@ -1,89 +1,232 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "DRUG-CNT-.YYYY.-.#####",
-  "creation": "2026-08-02 12:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "participant",
-    "webster_pak_type",
-    "column_break_1",
-    "prn_webster_details",
-    "schedule_8_details",
-    "section_entries",
-    "drug_count_entries"
-  ],
-  "fields": [
-    {
-      "fieldname": "participant",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "label": "Participant Name",
-      "options": "Participant Profile",
-      "reqd": 1
-    },
-    {
-      "fieldname": "webster_pak_type",
-      "fieldtype": "Select",
-      "in_list_view": 1,
-      "label": "Webster Pak Type",
-      "options": "Regular Daily Webster\nPRN Webster\nSchedule 8 (S8)",
-      "reqd": 1
-    },
-    {
-      "fieldname": "column_break_1",
-      "fieldtype": "Column Break"
-    },
-    {
-      "depends_on": "eval:doc.webster_pak_type=='PRN Webster'",
-      "fieldname": "prn_webster_details",
-      "fieldtype": "Data",
-      "label": "PRN Webster Specification"
-    },
-    {
-      "depends_on": "eval:doc.webster_pak_type=='Schedule 8 (S8)'",
-      "fieldname": "schedule_8_details",
-      "fieldtype": "Data",
-      "label": "Schedule 8 (S8) Specification"
-    },
-    {
-      "fieldname": "section_entries",
-      "fieldtype": "Section Break",
-      "label": "Handover Drug Count Entries"
-    },
-    {
-      "fieldname": "drug_count_entries",
-      "fieldtype": "Table",
-      "label": "Handover Drug Counts",
-      "options": "Drug Count Entry",
-      "reqd": 1
-    }
-  ],
-  "index_web_pages_for_search": 1,
-  "links": [],
-  "modified": "2026-08-02 12:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Care Management",
-  "name": "Participant Drug Count",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "write": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "DRUG-CNT-.YYYY.-.#####",
+ "creation": "2026-08-02 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "observed_by",
+  "webster_pak_type",
+  "column_break_1",
+  "prn_webster_details",
+  "schedule_8_details",
+  "reconciliation_status",
+  "medication_plan_item",
+  "expected_balance",
+  "observed_balance",
+  "discrepancy_quantity",
+  "discrepancy_incident",
+  "reconciled_by",
+  "reconciled_on",
+  "section_entries",
+  "drug_count_entries"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant Name",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "observed_by",
+   "fieldtype": "Link",
+   "label": "Observed By",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "webster_pak_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Webster Pak Type",
+   "options": "Regular Daily Webster\nPRN Webster\nSchedule 8 (S8)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.webster_pak_type=='PRN Webster'",
+   "fieldname": "prn_webster_details",
+   "fieldtype": "Data",
+   "label": "PRN Webster Specification"
+  },
+  {
+   "depends_on": "eval:doc.webster_pak_type=='Schedule 8 (S8)'",
+   "fieldname": "schedule_8_details",
+   "fieldtype": "Data",
+   "label": "Schedule 8 (S8) Specification"
+  },
+  {
+   "fieldname": "reconciliation_status",
+   "fieldtype": "Select",
+   "label": "Reconciliation Status",
+   "options": "Draft\nReconciled\nEscalated",
+   "default": "Draft",
+   "reqd": 1
+  },
+  {
+   "fieldname": "medication_plan_item",
+   "fieldtype": "Data",
+   "label": "Medication Plan Item"
+  },
+  {
+   "fieldname": "expected_balance",
+   "fieldtype": "Float",
+   "label": "Expected Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "observed_balance",
+   "fieldtype": "Float",
+   "label": "Observed Balance"
+  },
+  {
+   "fieldname": "discrepancy_quantity",
+   "fieldtype": "Float",
+   "label": "Discrepancy Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "discrepancy_incident",
+   "fieldtype": "Link",
+   "label": "Discrepancy Incident",
+   "options": "Incident"
+  },
+  {
+   "fieldname": "reconciled_by",
+   "fieldtype": "Link",
+   "label": "Reconciled By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reconciled_on",
+   "fieldtype": "Datetime",
+   "label": "Reconciled On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_entries",
+   "fieldtype": "Section Break",
+   "label": "Handover Drug Count Entries"
+  },
+  {
+   "fieldname": "drug_count_entries",
+   "fieldtype": "Table",
+   "label": "Handover Drug Counts",
+   "options": "Drug Count Entry",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Participant Drug Count",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Care Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Coordinator",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Worker",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 0,
+   "report": 0,
+   "share": 0,
+   "print": 1,
+   "email": 0,
+   "import": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "is_submittable": 1
 }

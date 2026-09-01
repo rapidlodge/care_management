@@ -734,10 +734,8 @@ class TestMedicationSafeguardingFoundation(IntegrationTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			plan.save(ignore_permissions=True)
 		for label, updates in (
-			("PRN", {"is_prn": 1}),
-			("Controlled", {"is_controlled_drug": 1}),
-			("Injection", {"route": "Injection"}),
-			("Inhaled", {"route": "Inhaled"}),
+			("PRN", {"is_prn": 1, "prn_review_due_minutes": 0}),
+			("Other Route", {"route": "Other"}),
 		):
 			item = self._item_payload(label)
 			item.update(updates)
@@ -1116,12 +1114,10 @@ class TestMedicationSafeguardingFoundation(IntegrationTestCase):
 	def test_r3_t025_active_plan_direct_child_safety_checks_are_enforced_before_first_event(self):
 		for offset, (label, updates, message) in enumerate((
 			("PRN", {"is_prn": 1}, "PRN"),
-			("Controlled", {"is_controlled_drug": 1}, "Controlled"),
-			("Injection", {"route": "Injection"}, "Specialist"),
-			("Inhaled", {"route": "Inhaled"}, "Specialist"),
 			("Missing Dose", {"prescribed_dose": ""}, "complete safe-use"),
 			("Unknown Frequency", {"frequency": "Every Lunar Cycle"}, "Unknown medication frequency"),
 			("No Selected Day", {"frequency": "Selected Days"}, "Selected-day"),
+			("Other Route", {"route": "Other"}, "Other medication route requires an explicit supported competency mapping."),
 		)):
 			effective_from = add_days(nowdate(), 20 + offset)
 			plan = self._active_plan(label=f"T025 {label}", effective_from=effective_from)
@@ -1148,10 +1144,12 @@ class TestMedicationSafeguardingFoundation(IntegrationTestCase):
 				"parenttype": "Medication Administration Log",
 				"parentfield": "medication_items",
 				**self._item_payload("T026 Unsafe"),
-				"is_controlled_drug": 1,
+				"route": "Other",
 			}
 		)
-		with self.assertRaisesRegex(frappe.ValidationError, "Controlled-drug"):
+		with self.assertRaisesRegex(
+			frappe.ValidationError, "Other medication route requires an explicit supported competency mapping."
+		):
 			unsafe_child.insert(ignore_permissions=True)
 		child = frappe.get_doc("Medication Plan Item", plan.medication_items[0].name)
 		with self.assertRaisesRegex(frappe.ValidationError, "at least one active"):
@@ -1190,6 +1188,7 @@ class TestMedicationSafeguardingFoundation(IntegrationTestCase):
 			"prn_indication": "Changed PRN",
 			"prn_minimum_interval_hours": 4,
 			"prn_maximum_dose": "40",
+			"prn_review_due_minutes": 120,
 			"monday": 0,
 			"tuesday": 0,
 			"wednesday": 0,
@@ -1202,6 +1201,7 @@ class TestMedicationSafeguardingFoundation(IntegrationTestCase):
 			"side_effects": "Changed side effects",
 			"escalation_instructions": "Changed escalation",
 		}
+		self.assertEqual(set(protected_updates), set(PROTECTED_HISTORY_FIELDS))
 		for fieldname in PROTECTED_HISTORY_FIELDS:
 			plan.reload()
 			original = plan.medication_items[0].get(fieldname)
