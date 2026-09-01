@@ -139,6 +139,7 @@ from care_management.care_management.permissions import (
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
+# R3C.2 medication safeguard DocTypes are included through the participant hook maps.
 permission_query_conditions = dict(PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS)
 
 has_permission = dict(PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)

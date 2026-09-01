@@ -2,16 +2,18 @@
 # For license information, please see license.txt
 
 import hashlib
+from decimal import Decimal, InvalidOperation
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import get_datetime, getdate, now_datetime
+from frappe.utils import add_to_date, get_datetime, getdate, now_datetime
 
 from care_management.care_management import permissions
 from care_management.care_management.doctype.medication_competency.medication_competency import (
 	has_active_medication_competency,
 )
 from care_management.care_management.doctype.medication_plan_item.medication_plan_item import (
+	competency_types_for_plan_item,
 	validate_active_medication_plan_item,
 )
 
@@ -28,6 +30,7 @@ class MedicationAdministrationEvent(Document):
 			self.finalized_by = None
 			self.finalized_on = None
 		self._validate_authoritative_context()
+		self._validate_prn_controls()
 		self._set_occurrence_key()
 		self._validate_duplicate_occurrence()
 
@@ -36,6 +39,7 @@ class MedicationAdministrationEvent(Document):
 			frappe.throw("Administration outcome is required before finalization.", frappe.ValidationError)
 		self._validate_outcome_details()
 		self._validate_worker_authority()
+		self._create_controlled_transaction()
 		self.finalized_by = permissions.normalize_user()
 		self.finalized_on = now_datetime()
 
@@ -71,6 +75,16 @@ class MedicationAdministrationEvent(Document):
 		self.prescribed_dose = item.prescribed_dose
 		self.dose_unit = item.dose_unit
 		self.route = item.route
+		self.is_prn_snapshot = 1 if item.get("is_prn") else 0
+		self.is_controlled_drug_snapshot = 1 if item.get("is_controlled_drug") else 0
+		self.prn_indication = item.get("prn_indication") if item.get("is_prn") else None
+		if item.get("is_prn"):
+			self.support_task = None
+			self.execution_instance = None
+			if not self.actual_datetime:
+				frappe.throw("PRN medication administration requires an explicit actual administration time.", frappe.ValidationError)
+			self.scheduled_datetime = self.actual_datetime
+			self.prn_review_due_at = add_to_date(self.actual_datetime, minutes=int(item.prn_review_due_minutes), as_datetime=True)
 		if self.support_task:
 			task = frappe.get_doc("Support Task", self.support_task)
 			task_participant = permissions.resolve_participant("Support Task", task.name)
@@ -119,6 +133,10 @@ class MedicationAdministrationEvent(Document):
 			frappe.throw("Medication event is outside the medication plan effective period.", frappe.ValidationError)
 		if item.frequency == "Selected Days" and not item.get(_weekday_field(scheduled_date)):
 			frappe.throw("Medication event weekday is not selected on the plan item.", frappe.ValidationError)
+		if item.get("is_prn"):
+			if get_datetime(self.scheduled_datetime) != get_datetime(self.actual_datetime):
+				frappe.throw("PRN medication events use actual administration time as their explicit time.", frappe.ValidationError)
+			return
 		if item.frequency not in {"Daily", "Selected Days"}:
 			frappe.throw("Unknown medication frequency is not safe for administration.", frappe.ValidationError)
 		expected = get_datetime(f"{getdate(scheduled)} {item.scheduled_time}")
@@ -173,8 +191,10 @@ class MedicationAdministrationEvent(Document):
 			raise frappe.PermissionError
 		if self.support_task and not permissions.has_task_assignment(self.support_task, user=worker):
 			raise frappe.PermissionError
-		if not has_active_medication_competency(worker, "General Medication", getdate(self.scheduled_datetime)):
-			raise frappe.PermissionError
+		plan, item = self._plan_and_item()
+		for competency_type in competency_types_for_plan_item(item):
+			if not has_active_medication_competency(worker, competency_type, getdate(self.actual_datetime or self.scheduled_datetime)):
+				raise frappe.PermissionError
 		if actor in {"Administrator"} or permissions.has_any_role({"System Manager"}, user=actor):
 			if not self.administrative_override_reason:
 				raise frappe.PermissionError
@@ -185,13 +205,88 @@ class MedicationAdministrationEvent(Document):
 			return
 		raise frappe.PermissionError
 
+	def _validate_prn_controls(self):
+		if not self.is_prn_snapshot:
+			return
+		if self.outcome == "Administered":
+			self._validate_prn_dose()
+			self._validate_prn_interval()
+
+	def _validate_prn_dose(self):
+		plan, item = self._plan_and_item()
+		try:
+			dose = Decimal(str(self.administered_dose))
+			maximum = Decimal(str(item.prn_maximum_dose))
+		except (InvalidOperation, TypeError, ValueError):
+			frappe.throw("PRN dose values must be numeric.", frappe.ValidationError)
+		if dose <= 0 or dose > maximum:
+			frappe.throw("PRN administered dose exceeds the per-administration ceiling.", frappe.ValidationError)
+		if self.dose_unit != item.dose_unit:
+			frappe.throw("PRN dose unit must match the medication plan item.", frappe.ValidationError)
+
+	def _validate_prn_interval(self):
+		plan, item = self._plan_and_item()
+		locked = frappe.db.sql(
+			"select name from `tabMedication Plan Item` where name = %s for update",
+			(self.medication_plan_item,),
+		)
+		if not locked:
+			frappe.throw("PRN medication requires an authoritative medication plan item.", frappe.ValidationError)
+		previous = frappe.get_all(
+			"Medication Administration Event",
+			filters={
+				"participant": self.participant,
+				"medication_plan_item": self.medication_plan_item,
+				"outcome": "Administered",
+				"docstatus": 1,
+			},
+			fields=["actual_datetime"],
+			order_by="actual_datetime desc",
+			limit=1,
+		)
+		if not previous:
+			return
+		minimum = add_to_date(previous[0].actual_datetime, hours=int(item.prn_minimum_interval_hours), as_datetime=True)
+		if get_datetime(self.actual_datetime) < minimum:
+			frappe.throw("PRN minimum interval has not elapsed.", frappe.ValidationError)
+
+	def _create_controlled_transaction(self):
+		if not self.is_controlled_drug_snapshot or self.outcome != "Administered":
+			return
+		if not self.checker:
+			frappe.throw("Controlled medication administration requires a witness.", frappe.ValidationError)
+		from care_management.care_management.doctype.controlled_medication_transaction.controlled_medication_transaction import create_source_transaction
+
+		txn = create_source_transaction(
+			self,
+			"Administration",
+			self.administered_dose,
+			self.checker,
+			reason=self.variance_reason,
+			incident=self.incident,
+			actor=self.worker,
+		)
+		self.controlled_transaction = txn.name
+
 	def _validate_outcome_details(self):
 		if self.outcome == "Administered" and not self.administered_dose:
 			frappe.throw("Administered medication events require an administered dose.", frappe.ValidationError)
 		if self.outcome == "Administered" and self.administered_dose != self.prescribed_dose and not self.variance_reason:
 			frappe.throw("Dose variance requires a variance reason.", frappe.ValidationError)
-		if self.outcome in {"Refused", "Missed", "Withheld", "Not Available", "Error"} and not self.variance_reason:
+		if self.outcome == "Error":
+			self._validate_required_incident_type("Medication Error")
+		if self.outcome == "Adverse Reaction":
+			self._validate_required_incident_type("Adverse Medication Reaction")
+		if self.outcome in {"Refused", "Missed", "Withheld", "Not Available", "Error", "Adverse Reaction"} and not self.variance_reason:
 			frappe.throw("Non-administered outcomes require a variance reason.", frappe.ValidationError)
+
+	def _validate_required_incident_type(self, incident_type):
+		if not self.incident:
+			frappe.throw("Medication incident outcome requires a linked Incident.", frappe.ValidationError)
+		if permissions.resolve_participant("Incident", self.incident) != self.participant:
+			raise frappe.PermissionError
+		if frappe.db.get_value("Incident", self.incident, "incident_type") != incident_type:
+			frappe.throw("Medication incident type does not match the event outcome.", frappe.ValidationError)
 
 
 def _weekday_field(date_value):
@@ -204,3 +299,48 @@ def _execution_scheduled_datetime(execution):
 	if execution.get("scheduled_date") and execution.get("scheduled_time"):
 		return get_datetime(f"{execution.scheduled_date} {execution.scheduled_time}")
 	return None
+
+
+def prn_review_is_satisfied(event_name, user=None):
+	event = frappe.get_doc("Medication Administration Event", event_name)
+	if (
+		event.docstatus != 1
+		or not event.is_prn_snapshot
+		or event.outcome != "Administered"
+		or not event.prn_review_due_at
+	):
+		return False
+	permissions.require_participant_access(
+		event.participant,
+		user=user,
+		applicable_for="Medication Administration Event",
+	)
+	return bool(
+		frappe.db.exists(
+			"Medication PRN Effectiveness Review",
+			{
+				"medication_event": event.name,
+				"participant": event.participant,
+				"docstatus": 1,
+			},
+		)
+	)
+
+
+def prn_review_is_overdue(event_name, user=None, now=None):
+	event = frappe.get_doc("Medication Administration Event", event_name)
+	if (
+		event.docstatus != 1
+		or not event.is_prn_snapshot
+		or event.outcome != "Administered"
+		or not event.prn_review_due_at
+	):
+		return False
+	permissions.require_participant_access(
+		event.participant,
+		user=user,
+		applicable_for="Medication Administration Event",
+	)
+	if prn_review_is_satisfied(event.name, user=user):
+		return False
+	return get_datetime(now or now_datetime()) > get_datetime(event.prn_review_due_at)

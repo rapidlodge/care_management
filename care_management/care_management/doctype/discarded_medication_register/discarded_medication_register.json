@@ -1,69 +1,178 @@
 {
-  "actions": [],
-  "allow_rename": 1,
-  "autoname": "DISC-MED-.YYYY.-.#####",
-  "creation": "2026-08-02 12:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "participant",
-    "date_of_birth",
-    "section_entries",
-    "discarded_items"
-  ],
-  "fields": [
-    {
-      "fieldname": "participant",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "label": "Participant Name",
-      "options": "Participant Profile",
-      "reqd": 1
-    },
-    {
-      "fetch_from": "participant.date_of_birth",
-      "fieldname": "date_of_birth",
-      "fieldtype": "Date",
-      "label": "Date of Birth",
-      "read_only": 1
-    },
-    {
-      "fieldname": "section_entries",
-      "fieldtype": "Section Break",
-      "label": "Discarded Medication Entries"
-    },
-    {
-      "fieldname": "discarded_items",
-      "fieldtype": "Table",
-      "label": "Discarded Medications",
-      "options": "Discarded Medication Item",
-      "reqd": 1
-    }
-  ],
-  "index_web_pages_for_search": 1,
-  "links": [],
-  "modified": "2026-08-02 12:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Care Management",
-  "name": "Discarded Medication Register",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "write": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "DISC-MED-.YYYY.-.#####",
+ "creation": "2026-08-02 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "prepared_by",
+  "date_of_birth",
+  "disposal_status",
+  "finalized_by",
+  "finalized_on",
+  "section_entries",
+  "discarded_items"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant Name",
+   "options": "Participant Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "prepared_by",
+   "fieldtype": "Link",
+   "label": "Prepared By",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disposal_status",
+   "fieldtype": "Select",
+   "label": "Disposal Status",
+   "options": "Draft\nFinalized\nEscalated",
+   "default": "Draft",
+   "reqd": 1
+  },
+  {
+   "fieldname": "finalized_by",
+   "fieldtype": "Link",
+   "label": "Finalized By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finalized_on",
+   "fieldtype": "Datetime",
+   "label": "Finalized On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_entries",
+   "fieldtype": "Section Break",
+   "label": "Discarded Medication Entries"
+  },
+  {
+   "fieldname": "discarded_items",
+   "fieldtype": "Table",
+   "label": "Discarded Medications",
+   "options": "Discarded Medication Item",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Discarded Medication Register",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Care Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Coordinator",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 1,
+   "report": 1,
+   "share": 0,
+   "print": 1,
+   "email": 1,
+   "import": 0
+  },
+  {
+   "docstatus": 0,
+   "idx": 0,
+   "permlevel": 0,
+   "select": 0,
+   "if_owner": 0,
+   "set_user_permissions": 0,
+   "role": "Support Worker",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "export": 0,
+   "report": 0,
+   "share": 0,
+   "print": 1,
+   "email": 0,
+   "import": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "is_submittable": 1
 }

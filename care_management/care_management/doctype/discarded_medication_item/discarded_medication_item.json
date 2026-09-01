@@ -1,78 +1,136 @@
 {
-  "creation": "2026-08-02 12:00:00.000000",
-  "doctype": "DocType",
-  "editable_grid": 1,
-  "engine": "InnoDB",
-  "field_order": [
-    "date",
-    "medication_details",
-    "incident_reported",
-    "column_break_1",
-    "staff_disposing_medication",
-    "date_of_return_to_pharmacy",
-    "staff_signature_return",
-    "pharmacy_signature_return"
-  ],
-  "fields": [
-    {
-      "default": "Today",
-      "fieldname": "date",
-      "fieldtype": "Date",
-      "in_list_view": 1,
-      "label": "Date",
-      "reqd": 1
-    },
-    {
-      "fieldname": "medication_details",
-      "fieldtype": "Small Text",
-      "in_list_view": 1,
-      "label": "Name of medication, dosage, and number of tablets/capsules/tubes",
-      "reqd": 1
-    },
-    {
-      "default": "No",
-      "fieldname": "incident_reported",
-      "fieldtype": "Select",
-      "in_list_view": 1,
-      "label": "Incident Report Y/N",
-      "options": "No\nYes",
-      "reqd": 1
-    },
-    {
-      "fieldname": "column_break_1",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "staff_disposing_medication",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "label": "Staff Name Disposing of Medication",
-      "options": "User",
-      "reqd": 1
-    },
-    {
-      "fieldname": "date_of_return_to_pharmacy",
-      "fieldtype": "Date",
-      "in_list_view": 1,
-      "label": "Date of Return to Pharmacy"
-    },
-    {
-      "fieldname": "staff_signature_return",
-      "fieldtype": "Link",
-      "label": "Staff Signature on Return to Pharmacy",
-      "options": "User"
-    },
-    {
-      "fieldname": "pharmacy_signature_return",
-      "fieldtype": "Data",
-      "label": "Pharmacy Signature / Name on Return to Pharmacy"
-    }
-  ],
-  "istable": 1,
-  "modified": "2026-08-02 12:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Care Management",
-  "name": "Discarded Medication Item",
-  "owner": "Administrator",
-  "permissions": []
+ "creation": "2026-08-02 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "medication_details",
+  "medication_plan_item",
+  "quantity",
+  "dose_unit",
+  "is_controlled_drug",
+  "controlled_transaction",
+  "witness",
+  "disposal_type",
+  "discrepancy_incident",
+  "incident_reported",
+  "column_break_1",
+  "staff_disposing_medication",
+  "date_of_return_to_pharmacy",
+  "staff_signature_return",
+  "pharmacy_signature_return"
+ ],
+ "fields": [
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "medication_details",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Name of medication, dosage, and number of tablets/capsules/tubes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "medication_plan_item",
+   "fieldtype": "Data",
+   "label": "Medication Plan Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Quantity",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dose_unit",
+   "fieldtype": "Data",
+   "label": "Dose Unit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "is_controlled_drug",
+   "fieldtype": "Check",
+   "label": "Controlled Drug"
+  },
+  {
+   "fieldname": "controlled_transaction",
+   "fieldtype": "Link",
+   "label": "Controlled Transaction",
+   "options": "Controlled Medication Transaction",
+   "read_only": 1
+  },
+  {
+   "fieldname": "witness",
+   "fieldtype": "Link",
+   "label": "Witness",
+   "options": "User"
+  },
+  {
+   "fieldname": "disposal_type",
+   "fieldtype": "Select",
+   "label": "Disposal Type",
+   "options": "Disposal\nReturn to Pharmacy",
+   "default": "Disposal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "discrepancy_incident",
+   "fieldtype": "Link",
+   "label": "Discrepancy Incident",
+   "options": "Incident"
+  },
+  {
+   "default": "No",
+   "fieldname": "incident_reported",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Incident Report Y/N",
+   "options": "No\nYes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "staff_disposing_medication",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Staff Name Disposing of Medication",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_of_return_to_pharmacy",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Return to Pharmacy"
+  },
+  {
+   "fieldname": "staff_signature_return",
+   "fieldtype": "Link",
+   "label": "Staff Signature on Return to Pharmacy",
+   "options": "User"
+  },
+  {
+   "fieldname": "pharmacy_signature_return",
+   "fieldtype": "Data",
+   "label": "Pharmacy Signature / Name on Return to Pharmacy"
+  }
+ ],
+ "istable": 1,
+ "modified": "2026-08-02 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Discarded Medication Item",
+ "owner": "Administrator",
+ "permissions": []
 }

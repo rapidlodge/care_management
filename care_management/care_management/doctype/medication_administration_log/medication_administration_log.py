@@ -191,7 +191,7 @@ class MedicationAdministrationLog(Document):
 			frappe.throw("Active medication plans require a review date.", frappe.ValidationError)
 		if self.purpose_evidence_status != "Recorded":
 			frappe.throw("Medication purpose evidence must be recorded before activation.", frappe.ValidationError)
-		validate_active_medication_plan_items(self.medication_items)
+		_validate_r3c2_medication_safeguard_activation(self.medication_items)
 		if self.previous_plan:
 			previous = frappe.get_doc("Medication Administration Log", self.previous_plan)
 			if is_activation and (previous.participant != self.participant or previous.plan_status != "Active"):
@@ -276,6 +276,11 @@ class MedicationAdministrationLog(Document):
 			if stored.parent == self.name:
 				continue
 			_validate_source_collection_after_item_move(stored.parent, stored.name, destination_plan=self.name)
+
+
+
+def _validate_r3c2_medication_safeguard_activation(rows):
+	validate_active_medication_plan_items(rows)
 
 
 _WEEKDAY_FIELDS = WEEKDAY_FIELDS

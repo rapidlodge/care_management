@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "PRN-REV-.YYYY.-.#####",
+ "creation": "2026-08-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "medication_event",
+  "medication_plan",
+  "medication_plan_item",
+  "administering_worker",
+  "review_due_at",
+  "reviewed_at",
+  "effectiveness_outcome",
+  "effectiveness_notes",
+  "incident",
+  "finalized_by",
+  "finalized_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "label": "Participant",
+   "options": "Participant Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "medication_event",
+   "fieldtype": "Link",
+   "label": "Medication Event",
+   "options": "Medication Administration Event",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "medication_plan",
+   "fieldtype": "Link",
+   "label": "Medication Plan",
+   "options": "Medication Administration Log",
+   "reqd": 1
+  },
+  {
+   "fieldname": "medication_plan_item",
+   "fieldtype": "Data",
+   "label": "Medication Plan Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "administering_worker",
+   "fieldtype": "Link",
+   "label": "Administering Worker",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "review_due_at",
+   "fieldtype": "Datetime",
+   "label": "Review Due At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Reviewed At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effectiveness_outcome",
+   "fieldtype": "Select",
+   "label": "Effectiveness Outcome",
+   "options": "Effective\nPartially Effective\nIneffective\nAdverse Reaction",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effectiveness_notes",
+   "fieldtype": "Small Text",
+   "label": "Effectiveness Notes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "incident",
+   "fieldtype": "Link",
+   "label": "Incident",
+   "options": "Incident"
+  },
+  {
+   "fieldname": "finalized_by",
+   "fieldtype": "Link",
+   "label": "Finalized By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finalized_on",
+   "fieldtype": "Datetime",
+   "label": "Finalized On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-08-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Medication PRN Effectiveness Review",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "submit": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "submit": 1,
+   "role": "Care Manager"
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "role": "Support Worker"
+  },
+  {
+   "read": 1,
+   "role": "Support Coordinator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "review_due_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
