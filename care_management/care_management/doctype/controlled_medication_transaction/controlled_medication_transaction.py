@@ -18,6 +18,18 @@ DECREASE_TYPES = frozenset({"Administration", "Disposal", "Return to Pharmacy", 
 SOURCE_GENERATED_TYPES = frozenset({"Administration", "Disposal", "Return to Pharmacy"})
 
 
+@frappe.whitelist()
+def search_controlled_transaction_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_controlled_transaction_participants(
+		doctype, txt, searchfield, start, page_len, filters=filters
+	)
+
+
+@frappe.whitelist()
+def search_controlled_transaction_plans(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_controlled_transaction_plans(doctype, txt, searchfield, start, page_len, filters=filters)
+
+
 def canonical_decimal(value):
 	try:
 		amount = Decimal(str(value))

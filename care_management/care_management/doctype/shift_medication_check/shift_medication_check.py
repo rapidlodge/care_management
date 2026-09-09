@@ -8,6 +8,20 @@ from frappe.utils import now_datetime
 from care_management.care_management import permissions
 
 
+@frappe.whitelist()
+def search_shift_medication_check_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_shift_medication_check_participants(
+		doctype, txt, searchfield, start, page_len, filters=filters
+	)
+
+
+@frappe.whitelist()
+def search_shift_medication_check_reconciliations(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_shift_medication_check_reconciliations(
+		doctype, txt, searchfield, start, page_len, filters=filters
+	)
+
+
 class ShiftMedicationCheck(Document):
 	def before_insert(self):
 		if permissions.has_any_role({"Support Worker"}) and not permissions.has_any_role({"Care Manager", "System Manager"}):

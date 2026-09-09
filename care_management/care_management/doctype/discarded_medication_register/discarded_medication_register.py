@@ -9,6 +9,13 @@ from care_management.care_management import permissions
 from care_management.care_management.doctype.controlled_medication_transaction.controlled_medication_transaction import create_source_transaction
 
 
+@frappe.whitelist()
+def search_discarded_medication_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_discarded_medication_participants(
+		doctype, txt, searchfield, start, page_len, filters=filters
+	)
+
+
 class DiscardedMedicationRegister(Document):
 	def before_insert(self):
 		if permissions.has_any_role({"Support Worker"}) and not permissions.has_any_role({"Care Manager", "System Manager"}):

@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from pathlib import Path
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -6,6 +7,7 @@ from frappe.tests import IntegrationTestCase
 from care_management.care_management import permissions
 from care_management.care_management.tests.helpers import (
 	ensure_r2c1_participant,
+	ensure_r2c1_task_assignment,
 	ensure_r2c1_support_plan,
 	ensure_r2c1_support_task,
 	ensure_r2c1_user,
@@ -232,6 +234,555 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 
 	def test_support_worker_standard_document_access_denied(self):
 		self.assert_document_denied("Support Plan", self.plan_a, self.worker)
+
+	def test_medication_log_participant_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"medication_administration_log",
+				"medication_administration_log.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.medication_administration_log.medication_administration_log.search_medication_log_participants",
+			script,
+		)
+
+	def test_medication_log_participant_link_query_returns_only_applicable_grant(self):
+		ensure_r2c1_user_permission(
+			self.care_manager,
+			self.participant_a,
+			applicable_for="Medication Administration Log",
+		)
+		frappe.set_user(self.care_manager)
+		rows = permissions.search_medication_log_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_medication_event_participant_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"medication_administration_event",
+				"medication_administration_event.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.medication_administration_event.medication_administration_event.search_medication_event_participants",
+			script,
+		)
+
+	def test_medication_event_participant_link_query_returns_only_applicable_worker_grant(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Medication Administration Event",
+		)
+		frappe.set_user(self.worker)
+		rows = permissions.search_medication_event_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_medication_event_plan_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"medication_administration_event",
+				"medication_administration_event.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.medication_administration_event.medication_administration_event.search_medication_event_plans",
+			script,
+		)
+
+	def test_medication_log_participant_search_does_not_grant_support_worker_lookup(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Medication Administration Log",
+		)
+		frappe.set_user(self.worker)
+		rows = permissions.search_medication_log_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual(rows, [])
+
+	def test_medication_event_support_task_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"medication_administration_event",
+				"medication_administration_event.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.medication_administration_event.medication_administration_event.search_medication_event_support_tasks",
+			script,
+		)
+
+	def test_medication_event_support_task_query_returns_only_assigned_applicable_task(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Medication Administration Event",
+		)
+		ensure_r2c1_task_assignment(self.task_a, self.worker)
+		task_doc = frappe.get_doc("Support Task", self.task_a)
+		task_doc.source_doctype = "Medication Administration Log"
+		task_doc.save(ignore_permissions=True)
+		frappe.set_user(self.worker)
+		rows = permissions.search_medication_event_support_tasks(
+			"Support Task",
+			"R2C1 Task R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.task_a})
+
+	def test_medication_event_plan_query_returns_only_assigned_applicable_plan(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Medication Administration Event",
+		)
+		ensure_r2c1_task_assignment(self.task_a, self.worker)
+		plan_a = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Log",
+				"participant": self.participant_a,
+				"plan_status": "Draft",
+				"effective_from": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+		plan_b = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Log",
+				"participant": self.participant_b,
+				"plan_status": "Draft",
+				"effective_from": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value("Medication Administration Log", plan_a.name, "plan_status", "Active", update_modified=False)
+		frappe.db.set_value("Medication Administration Log", plan_b.name, "plan_status", "Active", update_modified=False)
+		task_doc = frappe.get_doc("Support Task", self.task_a)
+		task_doc.source_doctype = "Medication Administration Log"
+		task_doc.source_docname = plan_a.name
+		task_doc.save(ignore_permissions=True)
+		frappe.set_user(self.worker)
+		rows = permissions.search_medication_event_plans(
+			"Medication Administration Log",
+			"MED-LOG",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {plan_a.name})
+		self.assertNotIn(plan_b.name, {row[0] for row in rows})
+
+	def test_medication_prn_review_links_use_scoped_queries(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"medication_prn_effectiveness_review",
+				"medication_prn_effectiveness_review.js",
+			)
+		).read_text()
+		for method in (
+			"search_medication_prn_review_participants",
+			"search_medication_prn_review_events",
+			"search_medication_prn_review_plans",
+		):
+			self.assertIn(
+				f"care_management.care_management.doctype.medication_prn_effectiveness_review.medication_prn_effectiveness_review.{method}",
+				script,
+			)
+
+	def test_medication_prn_review_participant_query_returns_only_applicable_grant(self):
+		ensure_r2c1_user_permission(
+			self.care_manager,
+			self.participant_a,
+			applicable_for="Medication PRN Effectiveness Review",
+		)
+		frappe.set_user(self.care_manager)
+		rows = permissions.search_medication_prn_review_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_medication_prn_review_plan_query_returns_only_applicable_grant(self):
+		ensure_r2c1_user_permission(
+			self.care_manager,
+			self.participant_a,
+			applicable_for="Medication PRN Effectiveness Review",
+		)
+		plan_a = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Log",
+				"participant": self.participant_a,
+				"plan_status": "Draft",
+				"effective_from": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+		plan_b = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Log",
+				"participant": self.participant_b,
+				"plan_status": "Draft",
+				"effective_from": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+		frappe.db.set_value("Medication Administration Log", plan_a.name, "plan_status", "Active", update_modified=False)
+		frappe.db.set_value("Medication Administration Log", plan_b.name, "plan_status", "Active", update_modified=False)
+		frappe.set_user(self.care_manager)
+		rows = permissions.search_medication_prn_review_plans(
+			"Medication Administration Log",
+			"MED-LOG",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {plan_a.name})
+		self.assertNotIn(plan_b.name, {row[0] for row in rows})
+
+	def test_controlled_transaction_links_use_scoped_queries(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"controlled_medication_transaction",
+				"controlled_medication_transaction.js",
+			)
+		).read_text()
+		for method in (
+			"search_controlled_transaction_participants",
+			"search_controlled_transaction_plans",
+		):
+			self.assertIn(
+				f"care_management.care_management.doctype.controlled_medication_transaction.controlled_medication_transaction.{method}",
+				script,
+			)
+
+	def test_controlled_transaction_client_previews_server_derived_mandatory_fields(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"controlled_medication_transaction",
+				"controlled_medication_transaction.js",
+			)
+		).read_text()
+		for fieldname in (
+			"balance_before",
+			"balance_after",
+			"actor",
+			"source_doctype",
+			"source_docname",
+			"source_action",
+			"source_key",
+		):
+			self.assertIn(f'"{fieldname}"', script)
+		self.assertIn("client-preview", script)
+		self.assertIn("frm.is_new()", script)
+
+	def test_controlled_transaction_participant_query_returns_only_applicable_grant(self):
+		ensure_r2c1_user_permission(
+			self.care_manager,
+			self.participant_a,
+			applicable_for="Controlled Medication Transaction",
+		)
+		frappe.set_user(self.care_manager)
+		rows = permissions.search_controlled_transaction_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_participant_drug_count_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"participant_drug_count",
+				"participant_drug_count.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.participant_drug_count.participant_drug_count.search_participant_drug_count_participants",
+			script,
+		)
+
+	def test_participant_drug_count_participant_query_returns_only_applicable_grant(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Participant Drug Count",
+		)
+		frappe.set_user(self.worker)
+		rows = permissions.search_participant_drug_count_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_shift_medication_check_participant_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"shift_medication_check",
+				"shift_medication_check.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.shift_medication_check.shift_medication_check.search_shift_medication_check_participants",
+			script,
+		)
+
+	def test_shift_medication_check_participant_query_returns_only_applicable_worker_grant(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Shift Medication Check",
+		)
+		frappe.set_user(self.worker)
+		rows = permissions.search_shift_medication_check_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_shift_medication_check_reconciliation_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"shift_medication_check",
+				"shift_medication_check.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.shift_medication_check.shift_medication_check.search_shift_medication_check_reconciliations",
+			script,
+		)
+		self.assertIn("participant: frm.doc.participant", script)
+
+	def test_shift_medication_check_reconciliation_query_returns_only_same_participant_reconciled_count(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Shift Medication Check",
+		)
+		plan_a = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Log",
+				"participant": self.participant_a,
+				"plan_status": "Draft",
+				"effective_from": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+		plan_a.append(
+			"medication_items",
+			{
+				"medication_name": "R2C2 Shift Check Count A",
+				"dosage": "1 tablet",
+				"route": "Oral",
+				"time_slot": "6 AM",
+				"medication_form": "Tablet",
+				"strength": "1 tablet",
+				"prescribed_dose": "1",
+				"dose_unit": "tablet",
+				"scheduled_time": "06:00:00",
+				"frequency": "Daily",
+				"indication": "Shift check reconciliation fixture",
+				"is_active": 1,
+			},
+		)
+		plan_a.save(ignore_permissions=True)
+		plan_b = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Log",
+				"participant": self.participant_b,
+				"plan_status": "Draft",
+				"effective_from": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+		plan_b.append(
+			"medication_items",
+			{
+				"medication_name": "R2C2 Shift Check Count B",
+				"dosage": "1 tablet",
+				"route": "Oral",
+				"time_slot": "6 AM",
+				"medication_form": "Tablet",
+				"strength": "1 tablet",
+				"prescribed_dose": "1",
+				"dose_unit": "tablet",
+				"scheduled_time": "06:00:00",
+				"frequency": "Daily",
+				"indication": "Shift check reconciliation fixture",
+				"is_active": 1,
+			},
+		)
+		plan_b.save(ignore_permissions=True)
+		count_a = frappe.get_doc(
+			{
+				"doctype": "Participant Drug Count",
+				"participant": self.participant_a,
+				"webster_pak_type": "Schedule 8 (S8)",
+				"schedule_8_details": "R2C2 same participant reconciliation",
+				"medication_plan_item": plan_a.medication_items[0].name,
+				"observed_balance": "0",
+				"drug_count_entries": [
+					{
+						"date": frappe.utils.today(),
+						"staff_name": self.worker,
+						"expected_count": 0,
+						"actual_count": 0,
+						"actual_end_of_shift_count": 0,
+						"staff_signature": self.worker,
+					}
+				],
+			}
+		).insert(ignore_permissions=True)
+		count_a.submit()
+		count_b = frappe.get_doc(
+			{
+				"doctype": "Participant Drug Count",
+				"participant": self.participant_b,
+				"webster_pak_type": "Schedule 8 (S8)",
+				"schedule_8_details": "R2C2 cross participant reconciliation",
+				"medication_plan_item": plan_b.medication_items[0].name,
+				"observed_balance": "0",
+				"drug_count_entries": [
+					{
+						"date": frappe.utils.today(),
+						"staff_name": self.other_worker,
+						"expected_count": 0,
+						"actual_count": 0,
+						"actual_end_of_shift_count": 0,
+						"staff_signature": self.other_worker,
+					}
+				],
+			}
+		).insert(ignore_permissions=True)
+		count_b.submit()
+		frappe.set_user(self.worker)
+		rows = permissions.search_shift_medication_check_reconciliations(
+			"Participant Drug Count",
+			"DRUG-CNT",
+			"name",
+			0,
+			20,
+			filters={"participant": self.participant_a},
+		)
+		self.assertIn(count_a.name, {row[0] for row in rows})
+		self.assertNotIn(count_b.name, {row[0] for row in rows})
+
+	def test_discarded_medication_participant_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"discarded_medication_register",
+				"discarded_medication_register.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.discarded_medication_register.discarded_medication_register.search_discarded_medication_participants",
+			script,
+		)
+
+	def test_discarded_medication_participant_query_returns_only_applicable_worker_grant(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Discarded Medication Register",
+		)
+		frappe.set_user(self.worker)
+		rows = permissions.search_discarded_medication_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
+
+	def test_incident_participant_link_uses_scoped_query(self):
+		script = Path(
+			frappe.get_app_path(
+				"care_management",
+				"care_management",
+				"doctype",
+				"incident",
+				"incident.js",
+			)
+		).read_text()
+		self.assertIn(
+			"care_management.care_management.doctype.incident.incident.search_incident_participants",
+			script,
+		)
+
+	def test_incident_participant_query_returns_only_applicable_worker_grant(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Incident",
+		)
+		frappe.set_user(self.worker)
+		rows = permissions.search_incident_participants(
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name",
+			0,
+			20,
+		)
+		self.assertEqual({row[0] for row in rows}, {self.participant_a})
 
 	def test_administrator_document_bypass_allowed(self):
 		self.assert_document_allowed("Support Plan", self.plan_a, "Administrator")

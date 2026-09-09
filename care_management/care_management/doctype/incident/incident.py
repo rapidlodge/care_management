@@ -8,6 +8,13 @@ from frappe.utils import now_datetime
 from care_management.care_management import permissions
 
 
+@frappe.whitelist()
+def search_incident_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_incident_participants(
+		doctype, txt, searchfield, start, page_len, filters=filters
+	)
+
+
 MANAGER_FIELDS = frozenset({
 	"assigned_staff",
 	"manager_actions_and_comments",

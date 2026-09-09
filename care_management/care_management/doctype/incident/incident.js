@@ -1,8 +1,8 @@
-// Copyright (c) 2026, Hex Flow and contributors
-// For license information, please see license.txt
-
-// frappe.ui.form.on("Incident", {
-// 	refresh(frm) {
-
-// 	},
-// });
+frappe.ui.form.on("Incident", {
+	setup(frm) {
+		frm.set_query("participant", () => ({
+			query:
+				"care_management.care_management.doctype.incident.incident.search_incident_participants",
+		}));
+	},
+});

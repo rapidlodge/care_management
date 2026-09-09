@@ -8,6 +8,23 @@ from frappe.utils import now_datetime
 from care_management.care_management import permissions
 
 
+@frappe.whitelist()
+def search_medication_prn_review_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_medication_prn_review_participants(
+		doctype, txt, searchfield, start, page_len, filters=filters
+	)
+
+
+@frappe.whitelist()
+def search_medication_prn_review_events(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_medication_prn_review_events(doctype, txt, searchfield, start, page_len, filters=filters)
+
+
+@frappe.whitelist()
+def search_medication_prn_review_plans(doctype, txt, searchfield, start, page_len, filters=None):
+	return permissions.search_medication_prn_review_plans(doctype, txt, searchfield, start, page_len, filters=filters)
+
+
 class MedicationPRNEffectivenessReview(Document):
 	def validate(self):
 		self._validate_event_context()
