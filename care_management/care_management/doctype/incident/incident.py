@@ -9,6 +9,7 @@ from care_management.care_management import permissions
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_incident_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_incident_participants(
 		doctype, txt, searchfield, start, page_len, filters=filters

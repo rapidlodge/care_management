@@ -9,6 +9,7 @@ from care_management.care_management import permissions
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_prn_review_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_prn_review_participants(
 		doctype, txt, searchfield, start, page_len, filters=filters
@@ -16,11 +17,13 @@ def search_medication_prn_review_participants(doctype, txt, searchfield, start, 
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_prn_review_events(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_prn_review_events(doctype, txt, searchfield, start, page_len, filters=filters)
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_prn_review_plans(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_prn_review_plans(doctype, txt, searchfield, start, page_len, filters=filters)
 

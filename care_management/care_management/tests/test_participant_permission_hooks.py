@@ -126,6 +126,29 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			}
 		).insert(ignore_permissions=True)
 
+	def insert_prn_event_row(self, participant, worker, name_suffix):
+		name = f"R3C3-PRN-PICKER-{name_suffix}-{frappe.generate_hash(length=8)}"
+		frappe.db.sql(
+			"""
+			insert into `tabMedication Administration Event`
+				(`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`,
+				 `participant`, `medication_plan`, `medication_plan_item`, `scheduled_datetime`,
+				 `actual_datetime`, `worker`, `outcome`, `is_prn_snapshot`)
+			values
+				(%s, now(), now(), %s, %s, 1, %s, %s, %s, now(), now(), %s, 'Administered', 1)
+			""",
+			(
+				name,
+				"Administrator",
+				"Administrator",
+				participant,
+				"R3C3-PRN-PICKER-PLAN",
+				"R3C3-PRN-PICKER-ITEM",
+				worker,
+			),
+		)
+		return name
+
 	def assert_real_get_list_returns_only_granted(self, doctype, names):
 		def get_role_permissions(doctype_meta, user=None, is_owner=None, debug=False):
 			return frappe._dict(
@@ -473,6 +496,176 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 		)
 		self.assertEqual({row[0] for row in rows}, {plan_a.name})
 		self.assertNotIn(plan_b.name, {row[0] for row in rows})
+
+	def test_search_query_shims_use_standard_frappe_sanitizer(self):
+		from care_management.care_management.doctype.controlled_medication_transaction import (
+			controlled_medication_transaction,
+		)
+		from care_management.care_management.doctype.discarded_medication_register import (
+			discarded_medication_register,
+		)
+		from care_management.care_management.doctype.incident import incident
+		from care_management.care_management.doctype.medication_administration_event import (
+			medication_administration_event,
+		)
+		from care_management.care_management.doctype.medication_administration_log import (
+			medication_administration_log,
+		)
+		from care_management.care_management.doctype.medication_prn_effectiveness_review import (
+			medication_prn_effectiveness_review,
+		)
+		from care_management.care_management.doctype.participant_drug_count import participant_drug_count
+		from care_management.care_management.doctype.shift_medication_check import shift_medication_check
+
+		for method in (
+			medication_administration_log.search_medication_log_participants,
+			medication_administration_event.search_medication_event_participants,
+			medication_administration_event.search_medication_event_plans,
+			medication_administration_event.search_medication_event_support_tasks,
+			medication_prn_effectiveness_review.search_medication_prn_review_participants,
+			medication_prn_effectiveness_review.search_medication_prn_review_events,
+			medication_prn_effectiveness_review.search_medication_prn_review_plans,
+			controlled_medication_transaction.search_controlled_transaction_participants,
+			controlled_medication_transaction.search_controlled_transaction_plans,
+			participant_drug_count.search_participant_drug_count_participants,
+			shift_medication_check.search_shift_medication_check_participants,
+			shift_medication_check.search_shift_medication_check_reconciliations,
+			discarded_medication_register.search_discarded_medication_participants,
+			incident.search_incident_participants,
+		):
+			self.assertTrue(hasattr(method, "__wrapped__"), method.__name__)
+
+	def test_search_query_endpoint_denials_fail_closed(self):
+		from care_management.care_management.doctype.medication_administration_log import (
+			medication_administration_log,
+		)
+
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Medication Administration Log",
+		)
+		frappe.set_user("Guest")
+		self.assertEqual(
+			medication_administration_log.search_medication_log_participants(
+				"Participant Profile",
+				"R2C1 Participant R2C2",
+				"name",
+				0,
+				20,
+			),
+			[],
+		)
+		frappe.set_user(self.worker)
+		self.assertEqual(
+			medication_administration_log.search_medication_log_participants(
+				"Participant Profile",
+				"R2C1 Participant R2C2",
+				"name",
+				0,
+				20,
+			),
+			[],
+		)
+		frappe.set_user(self.unmapped_user)
+		self.assertEqual(
+			medication_administration_log.search_medication_log_participants(
+				"Participant Profile",
+				"R2C1 Participant R2C2",
+				"name",
+				0,
+				20,
+			),
+			[],
+		)
+		frappe.set_user(self.care_manager)
+		self.assertEqual(
+			medication_administration_log.search_medication_log_participants(
+				"User",
+				"R2C1 Participant R2C2",
+				"name",
+				0,
+				20,
+			),
+			[],
+		)
+		self.assertRaises(
+			frappe.DataError,
+			medication_administration_log.search_medication_log_participants,
+			"Participant Profile",
+			"R2C1 Participant R2C2",
+			"name desc",
+			0,
+			20,
+		)
+		self.assertEqual(
+			list(permissions.search_medication_log_participants(
+				"Participant Profile",
+				"R2C1 Participant R2C2",
+				"name",
+				"bad",
+				20,
+			)),
+			[],
+		)
+		self.assertEqual(
+			list(medication_administration_log.search_medication_log_participants(
+				"Participant Profile",
+				self.participant_b,
+				"name",
+				0,
+				20,
+			)),
+			[],
+		)
+
+	def test_support_worker_prn_review_event_picker_returns_only_own_prn_events(self):
+		ensure_r2c1_user_permission(
+			self.worker,
+			self.participant_a,
+			applicable_for="Medication PRN Effectiveness Review",
+		)
+		ensure_r2c1_user_permission(
+			self.other_worker,
+			self.participant_a,
+			applicable_for="Medication PRN Effectiveness Review",
+		)
+		own_event = self.insert_prn_event_row(self.participant_a, self.worker, "OWN")
+		other_worker_event = self.insert_prn_event_row(self.participant_a, self.other_worker, "OTHER")
+		cross_participant_event = self.insert_prn_event_row(self.participant_b, self.worker, "CROSS")
+		frappe.set_user(self.worker)
+		rows = permissions.search_medication_prn_review_events(
+			"Medication Administration Event",
+			"R3C3-PRN-PICKER",
+			"name",
+			0,
+			20,
+		)
+		names = {row[0] for row in rows}
+		self.assertEqual(names, {own_event})
+		self.assertNotIn(other_worker_event, names)
+		self.assertNotIn(cross_participant_event, names)
+
+	def test_manager_prn_review_event_picker_remains_participant_scoped(self):
+		ensure_r2c1_user_permission(
+			self.care_manager,
+			self.participant_a,
+			applicable_for="Medication PRN Effectiveness Review",
+		)
+		worker_event = self.insert_prn_event_row(self.participant_a, self.worker, "MANAGER-WORKER")
+		other_worker_event = self.insert_prn_event_row(self.participant_a, self.other_worker, "MANAGER-OTHER")
+		cross_participant_event = self.insert_prn_event_row(self.participant_b, self.other_worker, "MANAGER-CROSS")
+		frappe.set_user(self.care_manager)
+		rows = permissions.search_medication_prn_review_events(
+			"Medication Administration Event",
+			"R3C3-PRN-PICKER",
+			"name",
+			0,
+			20,
+		)
+		names = {row[0] for row in rows}
+		self.assertEqual(names, {worker_event, other_worker_event})
+		self.assertNotIn(cross_participant_event, names)
 
 	def test_controlled_transaction_links_use_scoped_queries(self):
 		script = Path(

@@ -19,6 +19,7 @@ SOURCE_GENERATED_TYPES = frozenset({"Administration", "Disposal", "Return to Pha
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_controlled_transaction_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_controlled_transaction_participants(
 		doctype, txt, searchfield, start, page_len, filters=filters
@@ -26,6 +27,7 @@ def search_controlled_transaction_participants(doctype, txt, searchfield, start,
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_controlled_transaction_plans(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_controlled_transaction_plans(doctype, txt, searchfield, start, page_len, filters=filters)
 

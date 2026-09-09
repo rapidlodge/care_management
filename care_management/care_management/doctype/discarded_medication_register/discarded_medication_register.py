@@ -10,6 +10,7 @@ from care_management.care_management.doctype.controlled_medication_transaction.c
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_discarded_medication_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_discarded_medication_participants(
 		doctype, txt, searchfield, start, page_len, filters=filters

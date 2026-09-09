@@ -19,16 +19,19 @@ from care_management.care_management.doctype.medication_plan_item.medication_pla
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_event_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_event_participants(doctype, txt, searchfield, start, page_len, filters=filters)
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_event_plans(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_event_plans(doctype, txt, searchfield, start, page_len, filters=filters)
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_event_support_tasks(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_event_support_tasks(doctype, txt, searchfield, start, page_len, filters=filters)
 

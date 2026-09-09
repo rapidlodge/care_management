@@ -19,6 +19,7 @@ VALID_PLAN_STATUSES = frozenset({"Needs Review", "Draft", "Active", "Superseded"
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
 def search_medication_log_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return permissions.search_medication_log_participants(doctype, txt, searchfield, start, page_len, filters=filters)
 
