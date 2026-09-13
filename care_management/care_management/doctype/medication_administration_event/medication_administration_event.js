@@ -16,8 +16,19 @@ frappe.ui.form.on("Medication Administration Event", {
 				"care_management.care_management.doctype.medication_administration_event.medication_administration_event.search_medication_event_support_tasks",
 		}));
 	},
-	refresh(frm) {
+	async refresh(frm) {
 		if (frm.doc.docstatus !== 1 || frm.is_new()) {
+			return;
+		}
+
+		const response = await frappe.call({
+			method:
+				"care_management.care_management.doctype.medication_event_addendum.medication_event_addendum.can_create_medication_event_addendum",
+			args: {
+				medication_event: frm.doc.name,
+			},
+		});
+		if (!response.message) {
 			return;
 		}
 

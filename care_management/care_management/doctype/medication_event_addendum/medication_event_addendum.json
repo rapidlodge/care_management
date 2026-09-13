@@ -19,6 +19,8 @@
   "original_administered_dose",
   "original_dose_unit",
   "addendum_section",
+  "previous_addendum",
+  "sequence_number",
   "amendment_reason",
   "correction_explanation",
   "created_by",
@@ -111,6 +113,19 @@
    "label": "Correction/Addendum Evidence"
   },
   {
+   "fieldname": "previous_addendum",
+   "fieldtype": "Link",
+   "label": "Previous Addendum",
+   "options": "Medication Event Addendum",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sequence_number",
+   "fieldtype": "Int",
+   "label": "Sequence Number",
+   "read_only": 1
+  },
+  {
    "fieldname": "amendment_reason",
    "fieldtype": "Small Text",
    "in_list_view": 1,
@@ -147,24 +162,28 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Review Decision",
-   "options": "Pending\nApproved\nRejected"
+   "options": "Pending\nApproved\nRejected",
+   "permlevel": 1
   },
   {
    "fieldname": "review_comments",
    "fieldtype": "Small Text",
-   "label": "Review Comments"
+   "label": "Review Comments",
+   "permlevel": 1
   },
   {
    "fieldname": "reviewed_by",
    "fieldtype": "Link",
    "label": "Reviewed By",
    "options": "User",
+   "permlevel": 1,
    "read_only": 1
   },
   {
    "fieldname": "reviewed_on",
    "fieldtype": "Datetime",
    "label": "Reviewed On",
+   "permlevel": 1,
    "read_only": 1
   }
  ],
@@ -187,7 +206,21 @@
    "write": 1
   },
   {
+   "permlevel": 1,
+   "read": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
    "create": 1,
+   "read": 1,
+   "role": "Care Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "permlevel": 1,
    "read": 1,
    "role": "Care Manager",
    "submit": 1,
@@ -206,5 +239,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

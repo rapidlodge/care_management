@@ -940,8 +940,6 @@ def search_medication_prn_review_participants(doctype, txt, searchfield, start, 
 	)
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
 def search_medication_event_addendum_participants(doctype, txt, searchfield, start, page_len, filters=None):
 	return search_applicable_participants(
 		doctype,
@@ -955,8 +953,6 @@ def search_medication_event_addendum_participants(doctype, txt, searchfield, sta
 	)
 
 
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
 def search_medication_event_addendum_events(doctype, txt, searchfield, start, page_len, filters=None):
 	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"})
 	if not search:

@@ -1,7 +1,11 @@
+from unittest.mock import patch
+
 import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, now_datetime, nowdate
 
+from care_management.care_management import permissions
+from care_management.care_management.doctype.medication_event_addendum import medication_event_addendum
 from care_management.care_management.tests.helpers import (
 	ensure_r2c1_participant,
 	ensure_r2c1_support_plan,
@@ -21,10 +25,12 @@ class TestMedicationEventAddendum(IntegrationTestCase):
 		self.worker_b = ensure_r2c1_user("R3E Worker B", ["Support Worker"])
 		self.care_manager = ensure_r2c1_user("R3E Care Manager", ["Care Manager"])
 		self.care_manager_b = ensure_r2c1_user("R3E Care Manager B", ["Care Manager"])
+		self.support_coordinator = ensure_r2c1_user("R3E Support Coordinator", ["Support Coordinator"])
 		self.system_manager = ensure_r2c1_user("R3E System Manager", ["System Manager"])
 		for user, participant in (
 			(self.worker, self.participant_a),
 			(self.care_manager, self.participant_a),
+			(self.support_coordinator, self.participant_a),
 			(self.worker_b, self.participant_b),
 			(self.care_manager_b, self.participant_b),
 		):
@@ -271,3 +277,142 @@ class TestMedicationEventAddendum(IntegrationTestCase):
 		self.draft_addendum(event_name=event).insert()
 		with self.assertRaises(frappe.ValidationError):
 			self.draft_addendum(event_name=event).insert()
+
+	def test_provenance_fields_are_immutable_after_insert_for_all_privileged_roles(self):
+		doc = self.draft_addendum(event_name=self.submitted_event()).insert()
+		other_event = self.submitted_event(participant=self.participant_b, worker=self.worker_b)
+		other_event_doc = frappe.get_doc("Medication Administration Event", other_event)
+		for user in (self.worker, self.care_manager, self.system_manager):
+			for fieldname, replacement in (
+				("medication_event", other_event),
+				("participant", self.participant_b),
+				("medication_plan", other_event_doc.medication_plan),
+				("medication_plan_item", other_event_doc.medication_plan_item),
+				("event_worker", self.worker_b),
+				("event_scheduled_datetime", f"{nowdate()} 09:00:00"),
+				("event_actual_datetime", f"{nowdate()} 09:01:00"),
+				("original_outcome", "Missed"),
+				("original_administered_dose", "999"),
+				("original_dose_unit", "ml"),
+				("created_by", self.worker_b),
+				("created_on", now_datetime()),
+			):
+				reloaded = frappe.get_doc("Medication Event Addendum", doc.name)
+				frappe.set_user(user)
+				reloaded.set(fieldname, replacement)
+				with self.assertRaises(frappe.PermissionError):
+					reloaded.save()
+
+	def test_support_worker_cannot_craft_or_modify_manager_review_fields(self):
+		event = self.submitted_event()
+		for overrides in (
+			{"review_decision": "Approved"},
+			{"review_comments": "worker review"},
+			{"reviewed_by": self.worker},
+			{"reviewed_on": now_datetime()},
+		):
+			with self.assertRaises(frappe.PermissionError):
+				self.draft_addendum(event_name=event, **overrides).insert(ignore_permissions=True)
+
+		doc = self.draft_addendum(event_name=event).insert()
+		self.assertEqual(doc.review_decision, "Pending")
+		self.assertFalse(doc.review_comments)
+		self.assertFalse(doc.reviewed_by)
+		self.assertFalse(doc.reviewed_on)
+
+		frappe.set_user(self.worker)
+		doc.review_comments = "worker review"
+		with self.assertRaises(frappe.PermissionError):
+			doc.save(ignore_permissions=True)
+		stored = frappe.get_doc("Medication Event Addendum", doc.name)
+		self.assertEqual(stored.review_decision, "Pending")
+		self.assertFalse(stored.review_comments)
+		self.assertFalse(stored.reviewed_by)
+		self.assertFalse(stored.reviewed_on)
+
+	def test_manager_review_is_server_stamped_and_spoofed_review_metadata_is_denied(self):
+		doc = self.draft_addendum().insert()
+		frappe.set_user(self.care_manager)
+		doc.review_decision = "Rejected"
+		doc.review_comments = "Evidence needs replacement."
+		doc.reviewed_by = self.system_manager
+		with self.assertRaises(frappe.PermissionError):
+			doc.submit()
+
+		doc = frappe.get_doc("Medication Event Addendum", doc.name)
+		frappe.set_user(self.care_manager)
+		doc.review_decision = "Rejected"
+		doc.review_comments = "Evidence needs replacement."
+		doc.reviewed_on = now_datetime()
+		with self.assertRaises(frappe.PermissionError):
+			doc.submit()
+
+		doc = frappe.get_doc("Medication Event Addendum", doc.name)
+		frappe.set_user(self.care_manager)
+		doc.review_decision = "Rejected"
+		doc.review_comments = "Evidence needs replacement."
+		doc.submit()
+		self.assertEqual(doc.reviewed_by, self.care_manager)
+		self.assertTrue(doc.reviewed_on)
+
+	def test_rejected_addendum_allows_append_only_linked_replacement(self):
+		event = self.submitted_event()
+		rejected = self.draft_addendum(event_name=event).insert()
+		frappe.set_user(self.care_manager)
+		rejected.review_decision = "Rejected"
+		rejected.review_comments = "Needs more precise explanation."
+		rejected.submit()
+
+		replacement = self.draft_addendum(event_name=event).insert()
+		self.assertEqual(replacement.previous_addendum, rejected.name)
+		self.assertEqual(replacement.sequence_number, 2)
+
+		rejected = frappe.get_doc("Medication Event Addendum", rejected.name)
+		rejected.review_comments = "rewrite rejected evidence"
+		with self.assertRaises((frappe.ValidationError, frappe.PermissionError)):
+			rejected.save()
+
+	def test_creation_locks_authoritative_event_before_duplicate_check(self):
+		event = self.submitted_event()
+		order = []
+
+		def record_lock(doc):
+			order.append("lock")
+
+		def record_duplicate_check(doc):
+			order.append("duplicate")
+
+		with patch.object(
+			medication_event_addendum.MedicationEventAddendum,
+			"_lock_original_event",
+			record_lock,
+		), patch.object(
+			medication_event_addendum.MedicationEventAddendum,
+			"_validate_single_active_addendum",
+			record_duplicate_check,
+		):
+			self.draft_addendum(event_name=event).insert()
+
+		self.assertIn("duplicate", order)
+		self.assertLess(order.index("lock"), order.index("duplicate"))
+
+	def test_create_addendum_ui_authority_helper_is_event_specific(self):
+		own_event = self.submitted_event()
+		other_event = self.submitted_event(participant=self.participant_b, worker=self.worker_b)
+		self.assertTrue(medication_event_addendum._can_create_medication_event_addendum(own_event, self.worker))
+		self.assertFalse(medication_event_addendum._can_create_medication_event_addendum(other_event, self.worker))
+		self.assertFalse(
+			medication_event_addendum._can_create_medication_event_addendum(own_event, self.support_coordinator)
+		)
+		self.assertTrue(
+			medication_event_addendum._can_create_medication_event_addendum(own_event, self.care_manager)
+		)
+		self.assertTrue(
+			medication_event_addendum._can_create_medication_event_addendum(own_event, self.system_manager)
+		)
+
+	def test_internal_addendum_search_helpers_are_not_public_api(self):
+		self.assertNotIn(permissions.search_medication_event_addendum_participants, frappe.whitelisted)
+		self.assertNotIn(permissions.search_medication_event_addendum_events, frappe.whitelisted)
+		self.assertIn(medication_event_addendum.search_medication_event_addendum_participants, frappe.whitelisted)
+		self.assertIn(medication_event_addendum.search_medication_event_addendum_events, frappe.whitelisted)
