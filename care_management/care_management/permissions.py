@@ -579,6 +579,28 @@ def _sql_in(values):
 	return ", ".join(_sql_value(value) for value in values)
 
 
+def _search_inputs(doctype, txt, searchfield, start, page_len, expected_doctype, allowed_searchfields):
+	if doctype != expected_doctype:
+		return None
+	if searchfield not in allowed_searchfields:
+		return None
+	try:
+		start = int(start or 0)
+		page_len = int(page_len or 20)
+	except (TypeError, ValueError):
+		return None
+	if start < 0 or page_len <= 0 or page_len > 100:
+		return None
+	return frappe._dict(
+		{
+			"txt": str(txt or "").strip(),
+			"searchfield": searchfield,
+			"start": start,
+			"page_len": page_len,
+		}
+	)
+
+
 def _participant_query_condition(doctype, participant_values):
 	values = _sql_in(participant_values)
 	if not values:
@@ -667,6 +689,483 @@ def _support_worker_query_condition(doctype, user):
 	if doctype == "Incident":
 		return f"{table}.`reported_by` = {escaped_user} and {table}.`incident_status` = 'Open'"
 	return None
+
+
+def search_applicable_participants(
+	doctype,
+	txt,
+	searchfield,
+	start,
+	page_len,
+	applicable_for,
+	filters=None,
+	allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES,
+):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Participant Profile", {"name", "participant"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		allowed_roles,
+		user=resolved_user,
+	):
+		return []
+
+	values = None
+	if not _is_participant_boundary_administrator(resolved_user):
+		values = _sql_in(
+			get_user_participant_grants(
+				resolved_user,
+				applicable_for=applicable_for,
+			)
+		)
+		if not values:
+			return []
+
+	conditions = ["`disabled` = 0"] if frappe.get_meta("Participant Profile").has_field("disabled") else []
+	if values:
+		conditions.append(f"`name` in ({values})")
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"(`name` like {like_value} or `participant` like {like_value})")
+	where_clause = " and ".join(conditions) if conditions else "1=1"
+
+	return frappe.db.sql(
+		f"""
+		select `name`, `participant`
+		from `tabParticipant Profile`
+		where {where_clause}
+		order by
+			case when `{search.searchfield}` = %s then 0 else 1 end,
+			`participant` asc,
+			`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_medication_log_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Medication Administration Log",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES,
+	)
+
+
+def search_medication_event_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Medication Administration Event",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_medication_event_plans(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Medication Administration Event",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = ["medication_log.`plan_status` = 'Active'"]
+	if values:
+		conditions.append(f"medication_log.`participant` in ({values})")
+	if has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES,
+		user=resolved_user,
+	):
+		conditions.append(
+			f"""
+			exists (
+				select 1
+				from `tabSupport Task` support_task
+				inner join `tabSupport Task Assigned Staff` assigned_staff
+				on assigned_staff.`parent` = support_task.`name`
+				and assigned_staff.`parenttype` = 'Support Task'
+				and assigned_staff.`parentfield` = 'assigned_staff_table'
+				where support_task.`source_doctype` = 'Medication Administration Log'
+				and support_task.`source_docname` = medication_log.`name`
+				and support_task.`status` = 'Active'
+				and assigned_staff.`staff_user` = {_sql_value(resolved_user)}
+			)
+			"""
+		)
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"medication_log.`name` like {like_value}")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select medication_log.`name`, medication_log.`name`
+		from `tabMedication Administration Log` medication_log
+		where {where_clause}
+		order by
+			case when medication_log.`{search.searchfield}` = %s then 0 else 1 end,
+			medication_log.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_medication_event_support_tasks(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Support Task", {"name", "task_name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Medication Administration Event",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = [
+		"support_task.`status` = 'Active'",
+		"support_task.`source_doctype` = 'Medication Administration Log'",
+	]
+	if values:
+		conditions.append(f"support_plan.`participant` in ({values})")
+	if has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES,
+		user=resolved_user,
+	):
+		conditions.append(
+			f"""
+			exists (
+				select 1
+				from `tabSupport Task Assigned Staff` assigned_staff
+				where assigned_staff.`parent` = support_task.`name`
+				and assigned_staff.`parenttype` = 'Support Task'
+				and assigned_staff.`parentfield` = 'assigned_staff_table'
+				and assigned_staff.`staff_user` = {_sql_value(resolved_user)}
+			)
+			"""
+		)
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"(support_task.`name` like {like_value} or support_task.`task_name` like {like_value})")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select support_task.`name`, support_task.`task_name`
+		from `tabSupport Task` support_task
+		inner join `tabSupport Plan` support_plan
+		on support_plan.`name` = support_task.`support_plan`
+		where {where_clause}
+		order by
+			case when support_task.`{search.searchfield}` = %s then 0 else 1 end,
+			support_task.`task_name` asc,
+			support_task.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_medication_prn_review_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Medication PRN Effectiveness Review",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_medication_prn_review_events(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Medication PRN Effectiveness Review",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = [
+		"event.`docstatus` = 1",
+		"event.`outcome` = 'Administered'",
+		"event.`is_prn_snapshot` = 1",
+	]
+	if values:
+		conditions.append(f"event.`participant` in ({values})")
+	if has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES,
+		user=resolved_user,
+	):
+		conditions.append(f"event.`worker` = {_sql_value(resolved_user)}")
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"event.`name` like {like_value}")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select event.`name`, event.`name`
+		from `tabMedication Administration Event` event
+		where {where_clause}
+		order by
+			case when event.`{search.searchfield}` = %s then 0 else 1 end,
+			event.`scheduled_datetime` desc,
+			event.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_medication_prn_review_plans(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Medication PRN Effectiveness Review",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = ["medication_log.`plan_status` = 'Active'"]
+	if values:
+		conditions.append(f"medication_log.`participant` in ({values})")
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"medication_log.`name` like {like_value}")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select medication_log.`name`, medication_log.`name`
+		from `tabMedication Administration Log` medication_log
+		where {where_clause}
+		order by
+			case when medication_log.`{search.searchfield}` = %s then 0 else 1 end,
+			medication_log.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_controlled_transaction_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Controlled Medication Transaction",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES,
+	)
+
+
+def search_controlled_transaction_plans(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Controlled Medication Transaction",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = ["medication_log.`plan_status` = 'Active'"]
+	if values:
+		conditions.append(f"medication_log.`participant` in ({values})")
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"medication_log.`name` like {like_value}")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select medication_log.`name`, medication_log.`name`
+		from `tabMedication Administration Log` medication_log
+		where {where_clause}
+		order by
+			case when medication_log.`name` = %s then 0 else 1 end,
+			medication_log.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_participant_drug_count_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Participant Drug Count",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_shift_medication_check_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Shift Medication Check",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_shift_medication_check_reconciliations(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Participant Drug Count", {"name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Shift Medication Check",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = [
+		"drug_count.`docstatus` = 1",
+		"drug_count.`reconciliation_status` = 'Reconciled'",
+	]
+	if values:
+		conditions.append(f"drug_count.`participant` in ({values})")
+	if filters and filters.get("participant"):
+		participant = _sql_value(filters.get("participant"))
+		conditions.append(f"drug_count.`participant` = {participant}")
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"drug_count.`name` like {like_value}")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select drug_count.`name`, drug_count.`name`
+		from `tabParticipant Drug Count` drug_count
+		where {where_clause}
+		order by
+			case when drug_count.`{search.searchfield}` = %s then 0 else 1 end,
+			drug_count.`modified` desc,
+			drug_count.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
+	)
+
+
+def search_discarded_medication_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Discarded Medication Register",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_incident_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Incident",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
 
 
 def permission_query_condition_method_name(doctype):
