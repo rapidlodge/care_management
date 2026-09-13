@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "MED-ADD-.YYYY.-.#####",
+ "creation": "2026-09-13 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "medication_event",
+  "participant",
+  "medication_plan",
+  "medication_plan_item",
+  "event_context_section",
+  "event_worker",
+  "event_scheduled_datetime",
+  "event_actual_datetime",
+  "column_break_event_context",
+  "original_outcome",
+  "original_administered_dose",
+  "original_dose_unit",
+  "addendum_section",
+  "amendment_reason",
+  "correction_explanation",
+  "created_by",
+  "created_on",
+  "manager_review_section",
+  "review_decision",
+  "review_comments",
+  "reviewed_by",
+  "reviewed_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "medication_event",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Medication Event",
+   "options": "Medication Administration Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Participant",
+   "options": "Participant Profile",
+   "read_only": 1
+  },
+  {
+   "fieldname": "medication_plan",
+   "fieldtype": "Link",
+   "label": "Medication Plan",
+   "options": "Medication Administration Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "medication_plan_item",
+   "fieldtype": "Data",
+   "label": "Medication Plan Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "event_context_section",
+   "fieldtype": "Section Break",
+   "label": "Original Event Context"
+  },
+  {
+   "fieldname": "event_worker",
+   "fieldtype": "Link",
+   "label": "Original Administering Worker",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "event_scheduled_datetime",
+   "fieldtype": "Datetime",
+   "label": "Original Scheduled Datetime",
+   "read_only": 1
+  },
+  {
+   "fieldname": "event_actual_datetime",
+   "fieldtype": "Datetime",
+   "label": "Original Actual Datetime",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_event_context",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "original_outcome",
+   "fieldtype": "Data",
+   "label": "Original Outcome",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_administered_dose",
+   "fieldtype": "Data",
+   "label": "Original Administered Dose",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_dose_unit",
+   "fieldtype": "Data",
+   "label": "Original Dose Unit",
+   "read_only": 1
+  },
+  {
+   "fieldname": "addendum_section",
+   "fieldtype": "Section Break",
+   "label": "Correction/Addendum Evidence"
+  },
+  {
+   "fieldname": "amendment_reason",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Amendment Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "correction_explanation",
+   "fieldtype": "Text",
+   "label": "Correction Explanation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Link",
+   "label": "Created By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manager_review_section",
+   "fieldtype": "Section Break",
+   "label": "Manager Review"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "review_decision",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Review Decision",
+   "options": "Pending\nApproved\nRejected"
+  },
+  {
+   "fieldname": "review_comments",
+   "fieldtype": "Small Text",
+   "label": "Review Comments"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_on",
+   "fieldtype": "Datetime",
+   "label": "Reviewed On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-09-13 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Medication Event Addendum",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Care Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Support Worker",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Support Coordinator"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
