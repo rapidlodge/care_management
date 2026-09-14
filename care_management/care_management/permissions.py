@@ -38,6 +38,7 @@ DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 		"Medical Report Summary": "participant",
 		"Medication Administration Log": "participant",
 		"Medication Administration Event": "participant",
+		"Medication Event Addendum": "participant",
 		"Medication PRN Effectiveness Review": "participant",
 		"Controlled Medication Transaction": "participant",
 		"Mood Tracker": "participant",
@@ -87,6 +88,7 @@ STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINAT
 SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset(
 	{
 		"Medication Administration Event",
+		"Medication Event Addendum",
 		"Medication PRN Effectiveness Review",
 		"Participant Drug Count",
 		"Shift Medication Check",
@@ -463,6 +465,13 @@ def _resolve_protected_document_participant(doctype, doc):
 		if isinstance(doc, str) and not frappe.db.exists("Participant Profile", name):
 			return None
 		return name
+	if doctype == "Medication Event Addendum":
+		participant = _field_value(doctype, doc, "participant")
+		if participant:
+			return participant
+		medication_event = _field_value(doctype, doc, "medication_event")
+		if medication_event:
+			return resolve_participant("Medication Administration Event", medication_event)
 	return resolve_participant(doctype, doc)
 
 
@@ -513,6 +522,12 @@ def has_participant_document_permission(doc, ptype=None, user=None, debug=False)
 def _support_worker_document_permission_allowed(doctype, doc, permission_type, user):
 	if doctype == "Medication Administration Event":
 		return permission_type in {"create", "read", "select", "write", "submit"}
+	if doctype == "Medication Event Addendum":
+		if permission_type == "create":
+			return True
+		if permission_type in {"read", "select", "write"}:
+			return _addendum_owned_by_worker(doc, user)
+		return False
 	if doctype == "Medication PRN Effectiveness Review":
 		if permission_type == "create":
 			return True
@@ -539,6 +554,15 @@ def _prn_review_owned_by_worker(doc, user):
 	if isinstance(doc, str):
 		return frappe.db.get_value("Medication PRN Effectiveness Review", name, "administering_worker") == user
 	return _field_value("Medication PRN Effectiveness Review", doc, "administering_worker") == user
+
+
+def _addendum_owned_by_worker(doc, user):
+	name = _doc_name(doc)
+	if not name:
+		return False
+	if isinstance(doc, str):
+		return frappe.db.get_value("Medication Event Addendum", name, "created_by") == user
+	return _field_value("Medication Event Addendum", doc, "created_by") == user
 
 
 def _draft_owned_by_worker(doctype, doc, user):
@@ -678,6 +702,8 @@ def _support_worker_query_condition(doctype, user):
 	escaped_user = _sql_value(user)
 	if doctype == "Medication Administration Event":
 		return ""
+	if doctype == "Medication Event Addendum":
+		return f"{table}.`created_by` = {escaped_user}"
 	if doctype == "Medication PRN Effectiveness Review":
 		return f"{table}.`administering_worker` = {escaped_user}"
 	if doctype == "Participant Drug Count":
@@ -911,6 +937,68 @@ def search_medication_prn_review_participants(doctype, txt, searchfield, start, 
 		"Medication PRN Effectiveness Review",
 		filters=filters,
 		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_medication_event_addendum_participants(doctype, txt, searchfield, start, page_len, filters=None):
+	return search_applicable_participants(
+		doctype,
+		txt,
+		searchfield,
+		start,
+		page_len,
+		"Medication Event Addendum",
+		filters=filters,
+		allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+	)
+
+
+def search_medication_event_addendum_events(doctype, txt, searchfield, start, page_len, filters=None):
+	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"})
+	if not search:
+		return []
+	resolved_user = normalize_user()
+	if not resolved_user:
+		return []
+	if not _is_participant_boundary_administrator(resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES | SUPPORT_WORKER_ROLES,
+		user=resolved_user,
+	):
+		return []
+
+	grants = get_user_participant_grants(
+		resolved_user,
+		applicable_for="Medication Event Addendum",
+	)
+	values = _sql_in(grants)
+	if not _is_participant_boundary_administrator(resolved_user) and not values:
+		return []
+
+	conditions = ["event.`docstatus` = 1"]
+	if values:
+		conditions.append(f"event.`participant` in ({values})")
+	if has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user) and not has_any_role(
+		STANDARD_DOCUMENT_ACCESS_ROLES,
+		user=resolved_user,
+	):
+		conditions.append(f"event.`worker` = {_sql_value(resolved_user)}")
+	if search.txt:
+		like_value = _sql_value(f"%{search.txt}%")
+		conditions.append(f"event.`name` like {like_value}")
+	where_clause = " and ".join(conditions)
+
+	return frappe.db.sql(
+		f"""
+		select event.`name`, event.`name`
+		from `tabMedication Administration Event` event
+		where {where_clause}
+		order by
+			case when event.`{search.searchfield}` = %s then 0 else 1 end,
+			event.`scheduled_datetime` desc,
+			event.`name` asc
+		limit %s, %s
+		""",
+		(search.txt, search.start, search.page_len),
 	)
 
 
