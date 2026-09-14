@@ -8,6 +8,7 @@ app_license = "mit"
 from care_management.care_management.permissions import (
 	PARTICIPANT_DOCUMENT_PERMISSION_HOOKS,
 	PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS,
+	has_evidence_file_permission,
 )
 
 # Apps
@@ -143,12 +144,17 @@ from care_management.care_management.permissions import (
 permission_query_conditions = dict(PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS)
 
 has_permission = dict(PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)
+has_permission["File"] = has_evidence_file_permission
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
 doc_events = {
+	"File": {
+		"validate": "care_management.care_management.permissions.validate_evidence_file_retention",
+		"on_trash": "care_management.care_management.permissions.validate_evidence_file_retention",
+	},
 	"DocShare": {
 		"validate": "care_management.care_management.permissions.validate_participant_docshare",
 	},

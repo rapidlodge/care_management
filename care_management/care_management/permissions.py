@@ -97,6 +97,21 @@ SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset(
 	}
 )
 
+RETAINED_EVIDENCE_DOCTYPES = frozenset(
+	{
+		"Controlled Medication Transaction",
+		"Discarded Medication Register",
+		"Incident",
+		"Medication Administration Event",
+		"Medication Event Addendum",
+		"Medication PRN Effectiveness Review",
+		"Participant Drug Count",
+		"Shift Medication Check",
+	}
+)
+
+INCIDENT_RETAINED_STATUSES = frozenset({"Closed", "Archived"})
+
 MAX_RESOLUTION_DEPTH = 8
 _CONTROLLED_TRANSACTION_SOURCE_CONTEXT = ContextVar(
 	"care_management_controlled_transaction_source_context",
@@ -517,6 +532,89 @@ def has_participant_document_permission(doc, ptype=None, user=None, debug=False)
 		context = get_controlled_transaction_source_context()
 		applicable_for = context.get("source_doctype") if context else doctype
 	return has_participant_access(participant, user=resolved_user, applicable_for=applicable_for)
+
+
+def has_evidence_file_permission(doc, ptype=None, user=None, debug=False):
+	attached_doctype, attached_name = _file_attachment_target(doc)
+	if not attached_doctype or not attached_name:
+		return True
+	if attached_doctype not in PROTECTED_PARTICIPANT_DOCTYPES:
+		return True
+	if not is_retained_evidence_document(attached_doctype, attached_name):
+		return True
+	attached_doc = frappe.get_doc(attached_doctype, attached_name)
+	if not has_participant_document_permission(attached_doc, "read", user=user):
+		return False
+	return True
+
+
+def validate_evidence_file_retention(doc, method=None):
+	if _is_new_file_insert(doc):
+		return
+	targets = set()
+	current = _file_attachment_target(doc)
+	previous = _previous_file_attachment_target(doc)
+	if current != previous:
+		targets.update(target for target in (current, previous) if target[0] and target[1])
+	elif method == "on_trash":
+		targets.add(current)
+	for doctype, name in targets:
+		if is_retained_evidence_document(doctype, name):
+			frappe.throw(
+				"Retained Care Management evidence attachments cannot be deleted, detached, or repointed.",
+				frappe.ValidationError,
+			)
+
+
+def _is_new_file_insert(doc):
+	return bool(getattr(doc, "is_new", lambda: False)()) and not frappe.db.exists("File", getattr(doc, "name", None))
+
+
+def _file_attachment_target(doc):
+	return (
+		str(getattr(doc, "attached_to_doctype", "") or "").strip(),
+		str(getattr(doc, "attached_to_name", "") or "").strip(),
+	)
+
+
+def _previous_file_attachment_target(doc):
+	name = getattr(doc, "name", None)
+	if not name or not frappe.db.exists("File", name):
+		return (None, None)
+	row = frappe.db.get_value("File", name, ["attached_to_doctype", "attached_to_name"], as_dict=True)
+	if not row:
+		return (None, None)
+	return (
+		str(row.get("attached_to_doctype") or "").strip(),
+		str(row.get("attached_to_name") or "").strip(),
+	)
+
+
+def is_retained_evidence_document(doctype, name):
+	doctype = str(doctype or "").strip()
+	name = str(name or "").strip()
+	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
+		return False
+	if not frappe.db.exists(doctype, name):
+		return False
+	if doctype == "Incident":
+		return _incident_requires_retention(name)
+	docstatus = frappe.db.get_value(doctype, name, "docstatus")
+	return int(docstatus or 0) == 1
+
+
+def _incident_requires_retention(name):
+	status = frappe.db.get_value("Incident", name, "incident_status")
+	if status in INCIDENT_RETAINED_STATUSES:
+		return True
+	references = (
+		("Medication Administration Event", {"incident": name, "docstatus": ["!=", 2]}),
+		("Medication PRN Effectiveness Review", {"incident": name, "docstatus": ["!=", 2]}),
+		("Participant Drug Count", {"discrepancy_incident": name, "docstatus": ["!=", 2]}),
+		("Discarded Medication Item", {"discrepancy_incident": name}),
+		("Controlled Medication Transaction", {"incident": name, "docstatus": ["!=", 2]}),
+	)
+	return any(frappe.db.exists(doctype, filters) for doctype, filters in references)
 
 
 def _support_worker_document_permission_allowed(doctype, doc, permission_type, user):
