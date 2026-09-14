@@ -42,6 +42,8 @@ PROVENANCE_FIELDS = (
 	"original_dose_unit",
 	"created_by",
 	"created_on",
+	"previous_addendum",
+	"sequence_number",
 )
 
 REVIEW_FIELDS = ("review_decision", "review_comments", "reviewed_by", "reviewed_on")

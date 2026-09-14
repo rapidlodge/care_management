@@ -278,10 +278,16 @@ class TestMedicationEventAddendum(IntegrationTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			self.draft_addendum(event_name=event).insert()
 
+	def test_first_addendum_sequence_is_server_derived(self):
+		doc = self.draft_addendum(sequence_number=99).insert()
+		self.assertFalse(doc.previous_addendum)
+		self.assertEqual(doc.sequence_number, 1)
+
 	def test_provenance_fields_are_immutable_after_insert_for_all_privileged_roles(self):
 		doc = self.draft_addendum(event_name=self.submitted_event()).insert()
 		other_event = self.submitted_event(participant=self.participant_b, worker=self.worker_b)
 		other_event_doc = frappe.get_doc("Medication Administration Event", other_event)
+		other_addendum = self.draft_addendum(event_name=other_event, user=self.worker_b).insert()
 		for user in (self.worker, self.care_manager, self.system_manager):
 			for fieldname, replacement in (
 				("medication_event", other_event),
@@ -296,6 +302,8 @@ class TestMedicationEventAddendum(IntegrationTestCase):
 				("original_dose_unit", "ml"),
 				("created_by", self.worker_b),
 				("created_on", now_datetime()),
+				("previous_addendum", other_addendum.name),
+				("sequence_number", 99),
 			):
 				reloaded = frappe.get_doc("Medication Event Addendum", doc.name)
 				frappe.set_user(user)
@@ -358,6 +366,8 @@ class TestMedicationEventAddendum(IntegrationTestCase):
 	def test_rejected_addendum_allows_append_only_linked_replacement(self):
 		event = self.submitted_event()
 		rejected = self.draft_addendum(event_name=event).insert()
+		self.assertFalse(rejected.previous_addendum)
+		self.assertEqual(rejected.sequence_number, 1)
 		frappe.set_user(self.care_manager)
 		rejected.review_decision = "Rejected"
 		rejected.review_comments = "Needs more precise explanation."
@@ -371,6 +381,28 @@ class TestMedicationEventAddendum(IntegrationTestCase):
 		rejected.review_comments = "rewrite rejected evidence"
 		with self.assertRaises((frappe.ValidationError, frappe.PermissionError)):
 			rejected.save()
+
+	def test_replacement_sequence_is_authoritative_and_bad_previous_is_rejected(self):
+		event = self.submitted_event()
+		rejected = self.draft_addendum(event_name=event).insert()
+		frappe.set_user(self.care_manager)
+		rejected.review_decision = "Rejected"
+		rejected.review_comments = "Rejected before replacement."
+		rejected.submit()
+
+		with self.assertRaises(frappe.PermissionError):
+			self.draft_addendum(
+				event_name=event,
+				previous_addendum=self.draft_addendum(event_name=self.submitted_event(participant=self.participant_b, worker=self.worker_b), user=self.worker_b).insert().name,
+			).insert()
+
+		replacement = self.draft_addendum(
+			event_name=event,
+			previous_addendum=rejected.name,
+			sequence_number=99,
+		).insert()
+		self.assertEqual(replacement.previous_addendum, rejected.name)
+		self.assertEqual(replacement.sequence_number, 2)
 
 	def test_creation_locks_authoritative_event_before_duplicate_check(self):
 		event = self.submitted_event()
