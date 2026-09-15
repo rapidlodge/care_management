@@ -609,6 +609,11 @@ def validate_evidence_file_retention(doc, method=None):
 	_validate_private_evidence_attachment(doc, current)
 	if _is_new_file_insert(doc):
 		return
+	if _retained_file_content_write_attempted(doc, previous):
+		frappe.throw(
+			"Retained Care Management evidence attachment content cannot be replaced.",
+			frappe.ValidationError,
+		)
 	targets = set()
 	if current != previous:
 		targets.update(target for target in (current, previous) if target[0] and target[1])
@@ -632,7 +637,7 @@ def validate_retained_evidence_attachments(doc, method=None):
 	name = getattr(doc, "name", None)
 	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
 		return
-	requires_private_files = method == "before_submit" or is_retained_evidence_document(doctype, name)
+	requires_private_files = method == "before_submit" or is_retained_evidence_document(doctype, name, doc=doc)
 	if not requires_private_files:
 		return
 	public_files = frappe.get_all(
@@ -678,6 +683,34 @@ def _retained_file_provenance_changed(doc, previous):
 	return False
 
 
+def write_file_with_retained_evidence_guard(*args, **kwargs):
+	if args and _doc_doctype(args[0]) == "File":
+		doc = args[0]
+		previous = _previous_file_attachment_target(doc)
+		if _retained_file_content_write_attempted(doc, previous):
+			frappe.throw(
+				"Retained Care Management evidence attachment content cannot be replaced.",
+				frappe.ValidationError,
+			)
+		return doc.save_file_on_filesystem()
+
+	from frappe.utils.file_manager import save_file_on_filesystem
+
+	return save_file_on_filesystem(*args, **kwargs)
+
+
+def _retained_file_content_write_attempted(doc, previous):
+	if not is_retained_evidence_document(previous[0], previous[1]):
+		return False
+	if not getattr(doc, "name", None) or not frappe.db.exists("File", doc.name):
+		return False
+	if getattr(doc, "_content", None):
+		return True
+	if getattr(doc, "content", None):
+		return True
+	return False
+
+
 def _is_new_file_insert(doc):
 	return bool(getattr(doc, "is_new", lambda: False)()) and not frappe.db.exists("File", getattr(doc, "name", None))
 
@@ -702,7 +735,7 @@ def _previous_file_attachment_target(doc):
 	)
 
 
-def is_retained_evidence_document(doctype, name):
+def is_retained_evidence_document(doctype, name, doc=None):
 	doctype = str(doctype or "").strip()
 	name = str(name or "").strip()
 	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
@@ -710,13 +743,15 @@ def is_retained_evidence_document(doctype, name):
 	if not frappe.db.exists(doctype, name):
 		return False
 	if doctype == "Incident":
-		return _incident_requires_retention(name)
+		return _incident_requires_retention(name, doc=doc)
 	docstatus = frappe.db.get_value(doctype, name, "docstatus")
 	return int(docstatus or 0) == 1
 
 
-def _incident_requires_retention(name):
-	status = frappe.db.get_value("Incident", name, "incident_status")
+def _incident_requires_retention(name, doc=None):
+	status = str(getattr(doc, "incident_status", None) or "").strip()
+	if not status:
+		status = frappe.db.get_value("Incident", name, "incident_status")
 	if status in INCIDENT_RETAINED_STATUSES:
 		return True
 	references = (

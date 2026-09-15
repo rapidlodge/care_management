@@ -1,6 +1,9 @@
+import os
+
 import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, now_datetime, nowdate
+from frappe.utils.file_manager import get_file_path
 
 from care_management.care_management.tests.helpers import (
 	ensure_r2c1_participant,
@@ -21,6 +24,7 @@ class TestEvidenceRetention(IntegrationTestCase):
 		self.worker_b = ensure_r2c1_user("R3F Worker B", ["Support Worker"])
 		self.care_manager = ensure_r2c1_user("R3F Care Manager", ["Care Manager"])
 		for doctype in (
+			"Incident",
 			"Medication Administration Event",
 			"Medication Event Addendum",
 			"Medication Competency",
@@ -193,6 +197,25 @@ class TestEvidenceRetention(IntegrationTestCase):
 			}
 		)
 
+	def _incident(self, status="Open"):
+		frappe.set_user(self.care_manager)
+		incident = frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"participant": self.participant_a,
+				"incident_status": status,
+				"time_of_incident": "08:30:00",
+				"location_of_incident": "R3F synthetic location",
+				"date_of_incident": nowdate(),
+				"incident_type": "Medication Error",
+				"was_rp_used": "No",
+				"full_description_of_incident": "R3F synthetic incident evidence.",
+				"severity": "Low",
+			}
+		).insert()
+		frappe.set_user("Administrator")
+		return incident
+
 	def test_submitted_evidence_attachment_cannot_be_deleted_detached_or_repointed(self):
 		event = self._submitted_event()
 		file_doc = self._file_for(event.doctype, event.name)
@@ -317,3 +340,47 @@ class TestEvidenceRetention(IntegrationTestCase):
 		addendum.review_comments = "R3F reviewed."
 		with self.assertRaises(frappe.ValidationError):
 			addendum.submit()
+
+	def test_closing_incident_with_existing_public_attachment_is_rejected_from_new_state(self):
+		incident = self._incident(status="Open")
+		file_doc = self._file_for(incident.doctype, incident.name)
+		frappe.db.set_value("File", file_doc.name, "is_private", 0, update_modified=False)
+		frappe.set_user(self.care_manager)
+		incident.incident_status = "Closed"
+		with self.assertRaises(frappe.ValidationError):
+			incident.save()
+		self.assertEqual(frappe.db.get_value("Incident", incident.name, "incident_status"), "Open")
+
+	def test_open_incident_private_attachment_and_private_close_remain_valid(self):
+		incident = self._incident(status="Open")
+		file_doc = self._file_for(incident.doctype, incident.name)
+		self.assertEqual(file_doc.is_private, 1)
+		frappe.set_user(self.care_manager)
+		incident.incident_status = "Closed"
+		incident.save()
+		frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.get_value("Incident", incident.name, "incident_status"), "Closed")
+
+	def test_retained_file_binary_content_cannot_be_overwritten_by_file_save_path(self):
+		addendum = self._submitted_addendum()
+		file_doc = self._file_for(addendum.doctype, addendum.name)
+		original_hash = file_doc.content_hash
+		original_size = file_doc.file_size
+		original_url = file_doc.file_url
+		original_path = get_file_path(file_doc.file_url)
+		with open(original_path, "rb") as handle:
+			original_bytes = handle.read()
+		private_dir = original_path.rsplit("/", 1)[0]
+		before_files = set(os.listdir(private_dir))
+		candidate = frappe.get_doc("File", file_doc.name)
+		with self.assertRaises(frappe.ValidationError):
+			candidate.save_file(content=b"R3F malicious replacement bytes", overwrite=True)
+		after_files = set(os.listdir(private_dir))
+		reloaded = frappe.get_doc("File", file_doc.name)
+		with open(original_path, "rb") as handle:
+			current_bytes = handle.read()
+		self.assertEqual(reloaded.content_hash, original_hash)
+		self.assertEqual(reloaded.file_size, original_size)
+		self.assertEqual(reloaded.file_url, original_url)
+		self.assertEqual(current_bytes, original_bytes)
+		self.assertEqual(after_files, before_files)

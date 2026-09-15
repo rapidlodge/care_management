@@ -150,6 +150,8 @@ permission_query_conditions["File"] = (
 has_permission = dict(PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)
 has_permission["File"] = has_evidence_file_permission
 
+write_file = "care_management.care_management.permissions.write_file_with_retained_evidence_guard"
+
 # Document Events
 # ---------------
 # Hook on document methods and events
