@@ -56,11 +56,13 @@ class TestEvidenceRetention(IntegrationTestCase):
 			}
 		).insert(ignore_permissions=True).name
 
-	def _active_plan_and_task(self):
+	def _active_plan_and_task(self, participant=None, worker=None, suffix="A"):
+		participant = participant or self.participant_a
+		worker = worker or self.worker
 		plan = frappe.get_doc(
 			{
 				"doctype": "Medication Administration Log",
-				"participant": self.participant_a,
+				"participant": participant,
 				"week_commencing": nowdate(),
 				"plan_status": "Draft",
 				"plan_version": 1,
@@ -98,12 +100,12 @@ class TestEvidenceRetention(IntegrationTestCase):
 		).insert(ignore_permissions=True)
 		plan.plan_status = "Active"
 		plan.save(ignore_permissions=True)
-		support_plan = ensure_r2c1_support_plan(self.participant_a, "R3F A")
+		support_plan = ensure_r2c1_support_plan(participant, f"R3F {suffix}")
 		task = frappe.get_doc(
 			{
 				"doctype": "Support Task",
 				"support_plan": support_plan,
-				"task_name": f"R3F Medication Task {frappe.generate_hash(length=8)}",
+				"task_name": f"R3F Medication Task {suffix} {frappe.generate_hash(length=8)}",
 				"task_category": "Medication",
 				"status": "Active",
 				"clinical_priority": "Mandatory",
@@ -121,27 +123,29 @@ class TestEvidenceRetention(IntegrationTestCase):
 				],
 			}
 		).insert(ignore_permissions=True)
-		ensure_r2c1_task_assignment(task.name, self.worker)
+		ensure_r2c1_task_assignment(task.name, worker)
 		return plan, task.name
 
-	def _submitted_event(self):
-		self._grant_competency()
-		plan, task = self._active_plan_and_task()
+	def _submitted_event(self, participant=None, worker=None, suffix="A"):
+		participant = participant or self.participant_a
+		worker = worker or self.worker
+		self._grant_competency(worker=worker)
+		plan, task = self._active_plan_and_task(participant=participant, worker=worker, suffix=suffix)
 		event = frappe.get_doc(
 			{
 				"doctype": "Medication Administration Event",
-				"participant": self.participant_a,
+				"participant": participant,
 				"medication_plan": plan.name,
 				"medication_plan_item": plan.medication_items[0].name,
 				"support_task": task,
 				"scheduled_datetime": f"{nowdate()} 08:00:00",
 				"actual_datetime": f"{nowdate()} 08:01:00",
-				"worker": self.worker,
+				"worker": worker,
 				"outcome": "Administered",
 				"administered_dose": "10",
 			}
 		)
-		frappe.set_user(self.worker)
+		frappe.set_user(worker)
 		event.insert()
 		event.submit()
 		frappe.set_user("Administrator")
@@ -149,7 +153,7 @@ class TestEvidenceRetention(IntegrationTestCase):
 
 	def _submitted_addendum(self, event=None):
 		event = event or self._submitted_event()
-		frappe.set_user(self.worker)
+		frappe.set_user(event.worker)
 		addendum = frappe.get_doc(
 			{
 				"doctype": "Medication Event Addendum",
@@ -170,11 +174,24 @@ class TestEvidenceRetention(IntegrationTestCase):
 			{
 				"doctype": "File",
 				"file_name": f"r3f-{frappe.generate_hash(length=8)}.txt",
-				"content": "R3F synthetic attachment evidence",
+				"content": f"R3F synthetic attachment evidence for {doctype} {name}",
 				"attached_to_doctype": doctype,
 				"attached_to_name": name,
+				"is_private": 1,
 			}
 		).insert(ignore_permissions=True)
+
+	def _public_file_for(self, doctype, name):
+		return frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": f"r3f-public-{frappe.generate_hash(length=8)}.txt",
+				"content": "R3F public synthetic attachment evidence",
+				"attached_to_doctype": doctype,
+				"attached_to_name": name,
+				"is_private": 0,
+			}
+		)
 
 	def test_submitted_evidence_attachment_cannot_be_deleted_detached_or_repointed(self):
 		event = self._submitted_event()
@@ -216,3 +233,87 @@ class TestEvidenceRetention(IntegrationTestCase):
 		frappe.set_user(self.worker)
 		self.assertTrue(frappe.has_permission("File", "read", doc=file_doc, user=self.worker))
 		self.assertFalse(frappe.has_permission("File", "read", doc=file_doc, user=self.worker_b))
+
+	def test_public_evidence_attachment_insert_is_rejected(self):
+		event = self._submitted_event()
+		with self.assertRaises(frappe.ValidationError):
+			self._public_file_for(event.doctype, event.name).insert(ignore_permissions=True)
+
+	def test_private_draft_evidence_attachment_insert_succeeds(self):
+		event = self._submitted_event()
+		frappe.set_user(self.worker)
+		addendum = frappe.get_doc(
+			{
+				"doctype": "Medication Event Addendum",
+				"medication_event": event.name,
+				"amendment_reason": "R3F private draft",
+				"correction_explanation": "Private draft attachment succeeds.",
+			}
+		).insert()
+		frappe.set_user("Administrator")
+		file_doc = self._file_for(addendum.doctype, addendum.name)
+		self.assertEqual(file_doc.is_private, 1)
+
+	def test_file_list_is_participant_scoped_for_evidence_attachments(self):
+		addendum_a = self._submitted_addendum()
+		file_a = self._file_for(addendum_a.doctype, addendum_a.name)
+		event_b = self._submitted_event(
+			participant=self.participant_b,
+			worker=self.worker_b,
+			suffix="B",
+		)
+		file_b = self._file_for(event_b.doctype, event_b.name)
+
+		frappe.set_user(self.worker)
+		worker_rows = frappe.get_list("File", fields=["name", "file_name", "file_url"], limit=100)
+		worker_file_names = {row.name for row in worker_rows}
+		self.assertIn(file_a.name, worker_file_names)
+		self.assertNotIn(file_b.name, worker_file_names)
+		self.assertFalse(any(row.file_url == file_b.file_url for row in worker_rows))
+
+		frappe.set_user(self.care_manager)
+		manager_rows = frappe.get_list("File", fields=["name"], limit=100)
+		self.assertIn(file_a.name, {row.name for row in manager_rows})
+		self.assertNotIn(file_b.name, {row.name for row in manager_rows})
+
+		frappe.set_user("Administrator")
+		admin_rows = frappe.get_list("File", fields=["name"], limit=100)
+		self.assertTrue({file_a.name, file_b.name}.issubset({row.name for row in admin_rows}))
+
+	def test_retained_file_provenance_fields_are_immutable(self):
+		addendum = self._submitted_addendum()
+		file_doc = self._file_for(addendum.doctype, addendum.name)
+		mutations = {
+			"attached_to_field": "different_field",
+			"file_name": "renamed-r3f.txt",
+			"file_url": "/private/files/renamed-r3f.txt",
+			"is_private": 0,
+			"content_hash": "changed-hash",
+			"file_size": (file_doc.file_size or 0) + 1,
+		}
+		for fieldname, value in mutations.items():
+			candidate = frappe.get_doc("File", file_doc.name)
+			setattr(candidate, fieldname, value)
+			with self.subTest(fieldname=fieldname):
+				with self.assertRaises(frappe.ValidationError):
+					candidate.save(ignore_permissions=True)
+
+	def test_finalization_fails_if_existing_evidence_attachment_is_public(self):
+		event = self._submitted_event()
+		frappe.set_user(self.worker)
+		addendum = frappe.get_doc(
+			{
+				"doctype": "Medication Event Addendum",
+				"medication_event": event.name,
+				"amendment_reason": "R3F public finalization",
+				"correction_explanation": "Public attachment blocks finalization.",
+			}
+		).insert()
+		frappe.set_user("Administrator")
+		file_doc = self._file_for(addendum.doctype, addendum.name)
+		frappe.db.set_value("File", file_doc.name, "is_private", 0, update_modified=False)
+		frappe.set_user(self.care_manager)
+		addendum.review_decision = "Approved"
+		addendum.review_comments = "R3F reviewed."
+		with self.assertRaises(frappe.ValidationError):
+			addendum.submit()

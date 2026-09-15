@@ -111,6 +111,18 @@ RETAINED_EVIDENCE_DOCTYPES = frozenset(
 )
 
 INCIDENT_RETAINED_STATUSES = frozenset({"Closed", "Archived"})
+RETAINED_EVIDENCE_FILE_FIELDS = frozenset(
+	{
+		"attached_to_doctype",
+		"attached_to_name",
+		"attached_to_field",
+		"file_name",
+		"file_url",
+		"is_private",
+		"content_hash",
+		"file_size",
+	}
+)
 
 MAX_RESOLUTION_DEPTH = 8
 _CONTROLLED_TRANSACTION_SOURCE_CONTEXT = ContextVar(
@@ -548,12 +560,56 @@ def has_evidence_file_permission(doc, ptype=None, user=None, debug=False):
 	return True
 
 
+def get_evidence_file_permission_query_conditions(user=None):
+	resolved_user = normalize_user(user)
+	file_table = _sql_table("File")
+	evidence_doctypes = _sql_in(RETAINED_EVIDENCE_DOCTYPES)
+	unrelated_condition = f"ifnull({file_table}.`attached_to_doctype`, '') not in ({evidence_doctypes})"
+	if _is_participant_boundary_administrator(resolved_user):
+		return ""
+	if not resolved_user:
+		return unrelated_condition
+
+	evidence_conditions = []
+	for doctype in sorted(RETAINED_EVIDENCE_DOCTYPES):
+		if not _has_participant_document_role(doctype, resolved_user):
+			continue
+		grants = get_user_participant_grants(resolved_user, applicable_for=doctype)
+		participant_condition = _participant_query_condition(doctype, grants)
+		if participant_condition == "1=0":
+			continue
+		worker_condition = ""
+		if has_any_role(SUPPORT_WORKER_ROLES, user=resolved_user) and not has_any_role(
+			STANDARD_DOCUMENT_ACCESS_ROLES,
+			user=resolved_user,
+		):
+			worker_condition = _support_worker_query_condition(doctype, resolved_user)
+			if worker_condition is None:
+				continue
+		doc_table = _sql_table(doctype)
+		exists_clauses = [
+			f"evidence_doc.`name` = {file_table}.`attached_to_name`",
+			participant_condition.replace(f"{doc_table}.", "evidence_doc."),
+		]
+		if worker_condition:
+			exists_clauses.append(worker_condition.replace(f"{doc_table}.", "evidence_doc."))
+		evidence_conditions.append(
+			f"({file_table}.`attached_to_doctype` = {_sql_value(doctype)} "
+			f"and exists (select 1 from {doc_table} evidence_doc where {' and '.join(exists_clauses)}))"
+		)
+
+	if not evidence_conditions:
+		return unrelated_condition
+	return f"({unrelated_condition}) or ({' or '.join(evidence_conditions)})"
+
+
 def validate_evidence_file_retention(doc, method=None):
+	current = _file_attachment_target(doc)
+	previous = _previous_file_attachment_target(doc)
+	_validate_private_evidence_attachment(doc, current)
 	if _is_new_file_insert(doc):
 		return
 	targets = set()
-	current = _file_attachment_target(doc)
-	previous = _previous_file_attachment_target(doc)
 	if current != previous:
 		targets.update(target for target in (current, previous) if target[0] and target[1])
 	elif method == "on_trash":
@@ -564,6 +620,62 @@ def validate_evidence_file_retention(doc, method=None):
 				"Retained Care Management evidence attachments cannot be deleted, detached, or repointed.",
 				frappe.ValidationError,
 			)
+	if _retained_file_provenance_changed(doc, previous):
+		frappe.throw(
+			"Retained Care Management evidence attachment provenance cannot be modified.",
+			frappe.ValidationError,
+		)
+
+
+def validate_retained_evidence_attachments(doc, method=None):
+	doctype = _doc_doctype(doc)
+	name = getattr(doc, "name", None)
+	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
+		return
+	requires_private_files = method == "before_submit" or is_retained_evidence_document(doctype, name)
+	if not requires_private_files:
+		return
+	public_files = frappe.get_all(
+		"File",
+		filters={
+			"attached_to_doctype": doctype,
+			"attached_to_name": name,
+			"is_private": 0,
+		},
+		pluck="name",
+	)
+	if public_files:
+		frappe.throw(
+			"Care Management evidence attachments must be private before finalization.",
+			frappe.ValidationError,
+		)
+
+
+def _validate_private_evidence_attachment(doc, target):
+	doctype, name = target
+	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
+		return
+	if not int(getattr(doc, "is_private", 0) or 0):
+		frappe.throw(
+			"Care Management evidence attachments must be private.",
+			frappe.ValidationError,
+		)
+
+
+def _retained_file_provenance_changed(doc, previous):
+	previous_doctype, previous_name = previous
+	if not is_retained_evidence_document(previous_doctype, previous_name):
+		return False
+	name = getattr(doc, "name", None)
+	if not name or not frappe.db.exists("File", name):
+		return False
+	old = frappe.db.get_value("File", name, sorted(RETAINED_EVIDENCE_FILE_FIELDS), as_dict=True)
+	if not old:
+		return False
+	for fieldname in RETAINED_EVIDENCE_FILE_FIELDS:
+		if str(old.get(fieldname) or "") != str(getattr(doc, fieldname, None) or ""):
+			return True
+	return False
 
 
 def _is_new_file_insert(doc):
