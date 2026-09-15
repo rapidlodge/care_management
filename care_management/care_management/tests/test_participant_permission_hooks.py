@@ -183,17 +183,17 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			)
 		self.assertEqual({row.name for row in rows}, {names[0]})
 
-	def test_hooks_register_exactly_35_query_targets(self):
+	def test_hooks_register_exactly_36_query_targets(self):
 		import care_management.hooks as hooks
 
-		self.assertEqual(set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(hooks.permission_query_conditions), 35)
+		self.assertEqual(set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"})
+		self.assertEqual(len(hooks.permission_query_conditions), 36)
 
-	def test_hooks_register_exactly_35_document_targets(self):
+	def test_hooks_register_exactly_36_document_targets(self):
 		import care_management.hooks as hooks
 
-		self.assertEqual(set(hooks.has_permission), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(hooks.has_permission), 35)
+		self.assertEqual(set(hooks.has_permission), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"})
+		self.assertEqual(len(hooks.has_permission), 36)
 
 	def test_no_wildcard_permission_hooks_are_registered(self):
 		import care_management.hooks as hooks

@@ -8,6 +8,8 @@ app_license = "mit"
 from care_management.care_management.permissions import (
 	PARTICIPANT_DOCUMENT_PERMISSION_HOOKS,
 	PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS,
+	RETAINED_EVIDENCE_DOCTYPES,
+	has_evidence_file_permission,
 )
 
 # Apps
@@ -141,14 +143,25 @@ from care_management.care_management.permissions import (
 
 # R3C.2 medication safeguard DocTypes are included through the participant hook maps.
 permission_query_conditions = dict(PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS)
+permission_query_conditions["File"] = (
+	"care_management.care_management.permissions.get_evidence_file_permission_query_conditions"
+)
 
 has_permission = dict(PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)
+has_permission["File"] = has_evidence_file_permission
+
+write_file = "care_management.care_management.permissions.write_file_with_retained_evidence_guard"
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
 doc_events = {
+	"File": {
+		"before_validate": "care_management.care_management.permissions.validate_evidence_file_retention",
+		"validate": "care_management.care_management.permissions.validate_evidence_file_retention",
+		"on_trash": "care_management.care_management.permissions.validate_evidence_file_retention",
+	},
 	"DocShare": {
 		"validate": "care_management.care_management.permissions.validate_participant_docshare",
 	},
@@ -177,6 +190,15 @@ doc_events = {
 		"on_update": "care_management.care_management.utils.task_sync.sync_doc_to_support_task",
 	},
 }
+
+for evidence_doctype in RETAINED_EVIDENCE_DOCTYPES:
+	doc_events.setdefault(evidence_doctype, {})
+	doc_events[evidence_doctype]["validate"] = (
+		"care_management.care_management.permissions.validate_retained_evidence_attachments"
+	)
+	doc_events[evidence_doctype]["before_submit"] = (
+		"care_management.care_management.permissions.validate_retained_evidence_attachments"
+	)
 
 # doc_events = {
 # 	"*": {
