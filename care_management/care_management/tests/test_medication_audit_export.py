@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import os
 import zipfile
 from unittest.mock import patch
 
@@ -55,18 +56,22 @@ class TestMedicationAuditExport(IntegrationTestCase):
 		)
 		if existing:
 			return existing
-		return frappe.get_doc(
-			{
-				"doctype": "Medication Competency",
-				"worker": self.worker,
-				"competency_type": "General Medication",
-				"status": "Active",
-				"valid_from": nowdate(),
-				"expiry_date": add_days(nowdate(), 30),
-				"assessed_by": self.care_manager,
-				"assessed_on": nowdate(),
-			}
-		).insert(ignore_permissions=True).name
+		return (
+			frappe.get_doc(
+				{
+					"doctype": "Medication Competency",
+					"worker": self.worker,
+					"competency_type": "General Medication",
+					"status": "Active",
+					"valid_from": nowdate(),
+					"expiry_date": add_days(nowdate(), 30),
+					"assessed_by": self.care_manager,
+					"assessed_on": nowdate(),
+				}
+			)
+			.insert(ignore_permissions=True)
+			.name
+		)
 
 	def _active_plan_and_task(self, participant=None):
 		participant = participant or self.participant_a
@@ -194,6 +199,29 @@ class TestMedicationAuditExport(IntegrationTestCase):
 				self.assertNotIn("..", name.split("/"))
 			return {name: json.loads(archive.read(name).decode("utf-8")) for name in archive.namelist()}
 
+	def _insert_dated_parent(self, doctype, child_doctype, child_field, participant, dates, **values):
+		parent = frappe.get_doc({"doctype": doctype, "participant": participant, **values})
+		parent.db_insert()
+		children = []
+		for index, entry_date in enumerate(dates, start=1):
+			child = frappe.get_doc(
+				{
+					"doctype": child_doctype,
+					"parent": parent.name,
+					"parenttype": doctype,
+					"parentfield": child_field,
+					"idx": index,
+					"date": entry_date,
+				}
+			)
+			child.db_insert()
+			children.append(child)
+		return parent, children
+
+	def _raw_bundle_members(self, bundle):
+		with zipfile.ZipFile(io.BytesIO(bundle), "r") as archive:
+			return {name: archive.read(name) for name in archive.namelist()}
+
 	def test_authorized_manager_exports_scoped_medication_audit_bundle(self):
 		plan, event, addendum, file_doc = self._submitted_event_with_addendum_and_file()
 		other_plan, other_task = self._active_plan_and_task(participant=self.participant_b)
@@ -250,7 +278,9 @@ class TestMedicationAuditExport(IntegrationTestCase):
 
 	def test_system_manager_still_requires_explicit_participant_grant(self):
 		self._submitted_event_with_addendum_and_file()
-		self.assertTrue(audit_export.build_medication_audit_bundle(self.participant_a, user=self.system_manager))
+		self.assertTrue(
+			audit_export.build_medication_audit_bundle(self.participant_a, user=self.system_manager)
+		)
 		with self.assertRaises(frappe.PermissionError):
 			audit_export.build_medication_audit_bundle(self.participant_b, user=self.system_manager)
 
@@ -265,8 +295,12 @@ class TestMedicationAuditExport(IntegrationTestCase):
 				to_date=nowdate(),
 			)
 		empty_participant = ensure_r2c1_participant("R3G Empty", "3234567890")
-		ensure_r2c1_user_permission(self.care_manager, empty_participant, applicable_for="Medication Administration Log")
-		data = self._read_bundle(audit_export.build_medication_audit_bundle(empty_participant, user=self.care_manager))
+		ensure_r2c1_user_permission(
+			self.care_manager, empty_participant, applicable_for="Medication Administration Log"
+		)
+		data = self._read_bundle(
+			audit_export.build_medication_audit_bundle(empty_participant, user=self.care_manager)
+		)
 		self.assertEqual(sum(data["manifest.json"]["record_counts"].values()), 0)
 
 	def test_export_scope_limit_fails_closed_instead_of_truncating(self):
@@ -294,3 +328,176 @@ class TestMedicationAuditExport(IntegrationTestCase):
 		self.assertTrue(audit_export.can_download_medication_audit_bundle(self.participant_a))
 		frappe.set_user(self.worker)
 		self.assertFalse(audit_export.can_download_medication_audit_bundle(self.participant_a))
+
+	def test_child_dated_evidence_selects_intersecting_parents_and_complete_children(self):
+		inside = nowdate()
+		outside = add_days(nowdate(), -30)
+		families = (
+			(
+				"Participant Drug Count",
+				"Drug Count Entry",
+				"drug_count_entries",
+				{"webster_pak_type": "Regular Daily Webster"},
+			),
+			("Shift Medication Check", "Shift Medication Check Entry", "check_entries", {"month": "January"}),
+			(
+				"Discarded Medication Register",
+				"Discarded Medication Item",
+				"discarded_items",
+				{"disposal_status": "Finalized"},
+			),
+		)
+		selected = []
+		excluded = []
+		for parent_doctype, child_doctype, child_field, values in families:
+			parent, children = self._insert_dated_parent(
+				parent_doctype,
+				child_doctype,
+				child_field,
+				self.participant_a,
+				[inside, outside],
+				**values,
+			)
+			outside_parent, _ = self._insert_dated_parent(
+				parent_doctype,
+				child_doctype,
+				child_field,
+				self.participant_a,
+				[outside],
+				**values,
+			)
+			selected.append((parent_doctype, parent.name, child_doctype, {row.name for row in children}))
+			excluded.append((parent_doctype, outside_parent.name))
+
+		data = self._read_bundle(
+			audit_export.build_medication_audit_bundle(
+				self.participant_a,
+				user=self.care_manager,
+				from_date=inside,
+				to_date=inside,
+			)
+		)["records.json"]
+		for parent_doctype, parent_name, child_doctype, child_names in selected:
+			self.assertIn(parent_name, {row["name"] for row in data[parent_doctype]})
+			self.assertTrue(child_names.issubset({row["name"] for row in data[child_doctype]}))
+		for parent_doctype, parent_name in excluded:
+			self.assertNotIn(parent_name, {row["name"] for row in data[parent_doctype]})
+
+	def test_in_range_event_includes_older_referenced_plan_and_item(self):
+		plan, event, _addendum, _file = self._submitted_event_with_addendum_and_file()
+		frappe.db.set_value(
+			"Medication Administration Log",
+			plan.name,
+			"week_commencing",
+			add_days(nowdate(), -90),
+			update_modified=False,
+		)
+		data = self._read_bundle(
+			audit_export.build_medication_audit_bundle(
+				self.participant_a,
+				user=self.care_manager,
+				from_date=nowdate(),
+				to_date=nowdate(),
+			)
+		)["records.json"]
+		self.assertIn(plan.name, {row["name"] for row in data["Medication Administration Log"]})
+		self.assertIn(event.medication_plan_item, {row["name"] for row in data["Medication Plan Item"]})
+
+	def test_cross_participant_referenced_plan_fails_closed(self):
+		_plan, event, _addendum, _file = self._submitted_event_with_addendum_and_file()
+		other_plan, _task = self._active_plan_and_task(participant=self.participant_b)
+		frappe.db.set_value(
+			"Medication Administration Event",
+			event.name,
+			{
+				"medication_plan": other_plan.name,
+				"medication_plan_item": other_plan.medication_items[0].name,
+			},
+			update_modified=False,
+		)
+		with self.assertRaises(frappe.ValidationError):
+			audit_export.build_medication_audit_bundle(
+				self.participant_a,
+				user=self.care_manager,
+				from_date=nowdate(),
+				to_date=nowdate(),
+			)
+		frappe.db.set_value(
+			"Medication Administration Event",
+			event.name,
+			{"medication_plan": "missing-plan", "medication_plan_item": "missing-item"},
+			update_modified=False,
+		)
+		with self.assertRaises(frappe.ValidationError):
+			audit_export.build_medication_audit_bundle(
+				self.participant_a,
+				user=self.care_manager,
+				from_date=nowdate(),
+				to_date=nowdate(),
+			)
+
+	def test_manifest_authenticates_every_serialized_content_member(self):
+		self._submitted_event_with_addendum_and_file()
+		members = self._raw_bundle_members(
+			audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+		)
+		manifest = json.loads(members["manifest.json"])
+		audit_export.verify_bundle_content(manifest, members)
+		for name in ("records.json", "attachments.json", "versions.json"):
+			with self.subTest(name=name):
+				tampered = dict(members)
+				tampered[name] = tampered[name] + b" "
+				with self.assertRaises(frappe.ValidationError):
+					audit_export.verify_bundle_content(manifest, tampered)
+		canonical = audit_export._json_bytes({"b": 2, "a": 1})
+		self.assertEqual(
+			hashlib.sha256(canonical).hexdigest(),
+			hashlib.sha256(audit_export._json_bytes({"a": 1, "b": 2})).hexdigest(),
+		)
+
+	def test_attachment_inventory_rejects_public_missing_and_mismatched_files(self):
+		_plan, _event, _addendum, file_doc = self._submitted_event_with_addendum_and_file()
+		original_path = get_file_path(file_doc.name)
+		frappe.db.set_value("File", file_doc.name, "is_private", 0, update_modified=False)
+		with self.assertRaises(frappe.ValidationError):
+			audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+		frappe.db.set_value("File", file_doc.name, "is_private", 1, update_modified=False)
+
+		with patch(
+			"care_management.care_management.audit_export.get_file_path",
+			return_value=f"{original_path}.missing",
+		):
+			with self.assertRaises(frappe.ValidationError):
+				audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+
+		frappe.db.set_value(
+			"File", file_doc.name, "file_size", (file_doc.file_size or 0) + 1, update_modified=False
+		)
+		with self.assertRaises(frappe.ValidationError):
+			audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+		frappe.db.set_value(
+			"File", file_doc.name, "file_size", os.path.getsize(original_path), update_modified=False
+		)
+		frappe.db.set_value(
+			"File", file_doc.name, "content_hash", "invalid-content-hash", update_modified=False
+		)
+		with self.assertRaises(frappe.ValidationError):
+			audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+
+	def test_global_version_and_serialized_size_limits_fail_closed(self):
+		self._submitted_event_with_addendum_and_file()
+		with (
+			patch.object(audit_export, "MAX_EXPORT_VERSIONS", 0),
+			patch.object(
+				audit_export,
+				"_get_rows",
+				return_value=[{"name": "synthetic-version"}],
+			),
+		):
+			with self.assertRaises(frappe.ValidationError):
+				audit_export._collect_version_metadata(
+					{"Medication Administration Event": [{"name": "synthetic-event"}]}
+				)
+		with patch.object(audit_export, "MAX_EXPORT_UNCOMPRESSED_BYTES", 1):
+			with self.assertRaises(frappe.ValidationError):
+				audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)

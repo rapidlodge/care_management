@@ -8,17 +8,23 @@ import zipfile
 from datetime import date, datetime
 
 import frappe
-from frappe.utils import get_datetime, getdate, now_datetime
-from frappe.utils.file_manager import get_file_path
+from frappe.utils import getdate, now_datetime
+from frappe.utils.file_manager import get_content_hash, get_file_path
 
 from care_management.care_management import permissions
-
 
 EXPORT_SCHEMA_VERSION = "R3G-1"
 EXPORT_DOCTYPE = "Medication Administration Log"
 EXPORT_ROLES = frozenset({"Care Manager", "System Manager"})
 MAX_EXPORT_RECORDS_PER_DOCTYPE = 500
 MAX_EXPORT_ATTACHMENTS = 1000
+MAX_EXPORT_VERSIONS = 5000
+MAX_EXPORT_UNCOMPRESSED_BYTES = 25 * 1024 * 1024
+
+CHILD_DATE_SCOPE_RULE = (
+	"Parents are selected when at least one child date intersects the requested range; "
+	"every selected parent is exported with its complete child evidence."
+)
 
 MEDICATION_RECORD_ALLOWLISTS = {
 	"Medication Administration Log": (
@@ -301,26 +307,29 @@ def build_medication_audit_bundle(participant, user=None, from_date=None, to_dat
 	records = _collect_medication_records(participant, date_filters)
 	attachments = _collect_retained_attachment_inventory(records)
 	versions = _collect_version_metadata(records)
-	manifest = _build_manifest(participant, resolved_user, date_filters, records, attachments, versions)
-	payload = {
-		"schema_version": EXPORT_SCHEMA_VERSION,
-		"manifest": manifest,
-		"records": records,
-		"attachments": attachments,
-		"versions": versions,
+	content_members = {
+		"records.json": _json_bytes(records),
+		"attachments.json": _json_bytes(attachments),
+		"versions.json": _json_bytes(versions),
 	}
-	manifest["bundle_manifest_hash"] = _payload_hash(
-		{
-			"schema_version": EXPORT_SCHEMA_VERSION,
-			"participant": participant,
-			"filters": manifest["applied_filters"],
-			"record_counts": manifest["record_counts"],
-			"record_identities": manifest["record_identities"],
-			"attachment_identities": manifest["attachment_identities"],
-		}
+	member_integrity = {
+		name: {"sha256": hashlib.sha256(content).hexdigest(), "bytes": len(content)}
+		for name, content in sorted(content_members.items())
+	}
+	manifest = _build_manifest(
+		participant,
+		resolved_user,
+		date_filters,
+		records,
+		attachments,
+		versions,
+		member_integrity,
 	)
-	payload["manifest"] = manifest
-	return _zip_payload(payload)
+	manifest["bundle_manifest_hash"] = _manifest_hash(manifest)
+	members = {"manifest.json": _json_bytes(manifest), **content_members}
+	_enforce_bundle_size(members)
+	verify_bundle_content(manifest, members)
+	return _zip_payload(members)
 
 
 def _require_participant(participant):
@@ -359,7 +368,9 @@ def _collect_medication_records(participant, date_filters):
 	)
 	records["Medication Administration Log"] = plans
 	plan_names = [row["name"] for row in plans]
-	records["Medication Plan Item"] = _get_child_rows("Medication Plan Item", "Medication Administration Log", plan_names)
+	records["Medication Plan Item"] = _get_child_rows(
+		"Medication Plan Item", "Medication Administration Log", plan_names
+	)
 	events = _get_rows(
 		"Medication Administration Event",
 		{"participant": participant, **_date_range_filter("actual_datetime", date_filters)},
@@ -378,31 +389,117 @@ def _collect_medication_records(participant, date_filters):
 		"Controlled Medication Transaction",
 		{"participant": participant, **_date_range_filter("posting_datetime", date_filters)},
 	)
-	drug_counts = _get_rows("Participant Drug Count", {"participant": participant})
-	records["Participant Drug Count"] = drug_counts
-	records["Drug Count Entry"] = _get_child_rows(
-		"Drug Count Entry",
+	drug_counts, drug_count_entries = _collect_child_dated_family(
 		"Participant Drug Count",
-		[row["name"] for row in drug_counts],
+		"Drug Count Entry",
+		"drug_count_entries",
+		participant,
+		date_filters,
 	)
-	shift_checks = _get_rows("Shift Medication Check", {"participant": participant})
-	records["Shift Medication Check"] = shift_checks
-	records["Shift Medication Check Entry"] = _get_child_rows(
-		"Shift Medication Check Entry",
+	records["Participant Drug Count"] = drug_counts
+	records["Drug Count Entry"] = drug_count_entries
+	shift_checks, shift_check_entries = _collect_child_dated_family(
 		"Shift Medication Check",
-		[row["name"] for row in shift_checks],
+		"Shift Medication Check Entry",
+		"check_entries",
+		participant,
+		date_filters,
 	)
-	disposals = _get_rows("Discarded Medication Register", {"participant": participant})
-	records["Discarded Medication Register"] = disposals
-	records["Discarded Medication Item"] = _get_child_rows(
-		"Discarded Medication Item",
+	records["Shift Medication Check"] = shift_checks
+	records["Shift Medication Check Entry"] = shift_check_entries
+	disposals, disposal_items = _collect_child_dated_family(
 		"Discarded Medication Register",
-		[row["name"] for row in disposals],
+		"Discarded Medication Item",
+		"discarded_items",
+		participant,
+		date_filters,
 	)
+	records["Discarded Medication Register"] = disposals
+	records["Discarded Medication Item"] = disposal_items
+	_include_referenced_medication_plans(participant, records)
 	records["Incident"] = _collect_medication_incidents(participant, records)
 	for doctype in records:
 		records[doctype] = _sort_records(records[doctype])
 	return records
+
+
+def _collect_child_dated_family(parent_doctype, child_doctype, parentfield, participant, date_filters):
+	candidate_parents = _get_rows(parent_doctype, {"participant": participant})
+	if not date_filters.get("from_date") and not date_filters.get("to_date"):
+		selected_parents = candidate_parents
+	else:
+		candidate_names = [row["name"] for row in candidate_parents]
+		matching_children = _get_rows(
+			child_doctype,
+			{
+				"parenttype": parent_doctype,
+				"parentfield": parentfield,
+				"parent": ["in", candidate_names or ["__none__"]],
+				**_date_range_filter("date", date_filters),
+			},
+		)
+		selected_names = {row["parent"] for row in matching_children}
+		selected_parents = [row for row in candidate_parents if row["name"] in selected_names]
+	children = _get_child_rows(child_doctype, parent_doctype, [row["name"] for row in selected_parents])
+	return selected_parents, children
+
+
+def _include_referenced_medication_plans(participant, records):
+	plan_names = set()
+	item_names = set()
+	expected_item_parents = {}
+	for rows in records.values():
+		for row in rows:
+			plan_name = row.get("medication_plan")
+			item_name = row.get("medication_plan_item")
+			if plan_name:
+				plan_names.add(plan_name)
+			if item_name:
+				item_names.add(item_name)
+				if plan_name:
+					expected_item_parents[item_name] = plan_name
+
+	referenced_items = _get_rows(
+		"Medication Plan Item",
+		{"name": ["in", sorted(item_names) or ["__none__"]]},
+	)
+	items_by_name = {row["name"]: row for row in referenced_items}
+	if item_names != set(items_by_name):
+		frappe.throw("Audit export references a missing medication plan item.", frappe.ValidationError)
+	for item_name, row in items_by_name.items():
+		plan_names.add(row["parent"])
+		if expected_item_parents.get(item_name) and expected_item_parents[item_name] != row["parent"]:
+			frappe.throw("Audit export medication plan references are inconsistent.", frappe.ValidationError)
+
+	referenced_plans = _get_rows(
+		"Medication Administration Log",
+		{"name": ["in", sorted(plan_names) or ["__none__"]]},
+	)
+	plans_by_name = {row["name"]: row for row in referenced_plans}
+	if plan_names != set(plans_by_name):
+		frappe.throw(
+			"Audit export references a missing medication administration plan.", frappe.ValidationError
+		)
+	if any(row.get("participant") != participant for row in referenced_plans):
+		frappe.throw(
+			"Audit export references medication evidence for another participant.", frappe.ValidationError
+		)
+
+	all_plan_items = _get_child_rows(
+		"Medication Plan Item",
+		"Medication Administration Log",
+		sorted(plan_names),
+	)
+	records["Medication Administration Log"] = _merge_records(
+		records["Medication Administration Log"], referenced_plans
+	)
+	records["Medication Plan Item"] = _merge_records(records["Medication Plan Item"], all_plan_items)
+
+
+def _merge_records(existing, additional):
+	by_name = {row["name"]: row for row in existing}
+	by_name.update({row["name"]: row for row in additional})
+	return list(by_name.values())
 
 
 def _collect_medication_incidents(participant, records):
@@ -442,7 +539,6 @@ def _collect_retained_attachment_inventory(records):
 			filters={
 				"attached_to_doctype": doctype,
 				"attached_to_name": name,
-				"is_private": 1,
 			},
 			fields=MEDICATION_RECORD_ALLOWLISTS["File"],
 			order_by="name asc",
@@ -453,8 +549,7 @@ def _collect_retained_attachment_inventory(records):
 					"Audit export attachment scope exceeds the safe limit. Narrow the export filters.",
 					frappe.ValidationError,
 				)
-			item = _clean_row(row)
-			item["sha256"] = _file_sha256(row.name)
+			item = _validated_attachment(row)
 			attachments.append(item)
 	return _sort_records(attachments)
 
@@ -472,6 +567,11 @@ def _collect_version_metadata(records):
 					limit=50,
 				)
 			)
+			if len(version_rows) > MAX_EXPORT_VERSIONS:
+				frappe.throw(
+					"Audit export Version scope exceeds the safe limit. Narrow the export filters.",
+					frappe.ValidationError,
+				)
 	return _sort_records(version_rows)
 
 
@@ -516,24 +616,45 @@ def _clean_row(row):
 
 
 def _sort_records(rows):
-	return sorted(rows, key=lambda row: (str(row.get("attached_to_doctype") or ""), str(row.get("parent") or ""), row["name"]))
+	return sorted(
+		rows,
+		key=lambda row: (
+			str(row.get("attached_to_doctype") or ""),
+			str(row.get("parent") or ""),
+			row["name"],
+		),
+	)
 
 
-def _file_sha256(file_name):
-	path = get_file_path(file_name)
-	if not path:
-		return None
-	sha = hashlib.sha256()
+def _validated_attachment(row):
+	if not bool(row.is_private):
+		frappe.throw(
+			"Audit export cannot include public retained-evidence attachments.", frappe.ValidationError
+		)
+	path = get_file_path(row.name)
+	sha256 = hashlib.sha256()
+	content = bytearray()
 	try:
 		with open(path, "rb") as handle:
 			for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-				sha.update(chunk)
-	except FileNotFoundError:
-		return None
-	return sha.hexdigest()
+				sha256.update(chunk)
+				content.extend(chunk)
+	except (FileNotFoundError, OSError, TypeError):
+		frappe.throw("Audit export retained-evidence attachment bytes are missing.", frappe.ValidationError)
+	actual_size = len(content)
+	actual_content_hash = get_content_hash(bytes(content))
+	if row.file_size is None or int(row.file_size) != actual_size:
+		frappe.throw("Audit export attachment size does not match the stored bytes.", frappe.ValidationError)
+	if not row.content_hash or row.content_hash != actual_content_hash:
+		frappe.throw(
+			"Audit export attachment content hash does not match the stored bytes.", frappe.ValidationError
+		)
+	item = _clean_row(row)
+	item["sha256"] = sha256.hexdigest()
+	return item
 
 
-def _build_manifest(participant, user, date_filters, records, attachments, versions):
+def _build_manifest(participant, user, date_filters, records, attachments, versions, member_integrity):
 	record_counts = {doctype: len(rows) for doctype, rows in sorted(records.items())}
 	record_identities = {doctype: [row["name"] for row in rows] for doctype, rows in sorted(records.items())}
 	return {
@@ -545,6 +666,7 @@ def _build_manifest(participant, user, date_filters, records, attachments, versi
 		},
 		"requesting_user": user,
 		"generated_at": now_datetime().isoformat(),
+		"date_scope_rule": CHILD_DATE_SCOPE_RULE,
 		"record_counts": record_counts,
 		"record_identities": record_identities,
 		"attachment_identities": [
@@ -558,22 +680,48 @@ def _build_manifest(participant, user, date_filters, records, attachments, versi
 			for row in attachments
 		],
 		"version_identities": [row["name"] for row in versions],
+		"members": member_integrity,
 	}
 
 
-def _zip_payload(payload):
-	members = {
-		"manifest.json": payload["manifest"],
-		"records.json": payload["records"],
-		"attachments.json": payload["attachments"],
-		"versions.json": payload["versions"],
-	}
+def _zip_payload(members):
 	output = io.BytesIO()
 	with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
 		for name, content in members.items():
 			_safe_member_name(name)
-			bundle.writestr(name, _json_dumps(content))
+			bundle.writestr(name, content)
 	return output.getvalue()
+
+
+def verify_bundle_content(manifest, members):
+	for name in ("records.json", "attachments.json", "versions.json"):
+		content = members.get(name)
+		expected = manifest.get("members", {}).get(name)
+		if not isinstance(content, bytes) or not expected:
+			frappe.throw("Audit bundle content manifest is incomplete.", frappe.ValidationError)
+		if (
+			expected.get("bytes") != len(content)
+			or expected.get("sha256") != hashlib.sha256(content).hexdigest()
+		):
+			frappe.throw(f"Audit bundle content integrity failed for {name}.", frappe.ValidationError)
+	if manifest.get("bundle_manifest_hash") != _manifest_hash(manifest):
+		frappe.throw("Audit bundle manifest integrity verification failed.", frappe.ValidationError)
+	return True
+
+
+def _manifest_hash(manifest):
+	canonical = dict(manifest)
+	canonical.pop("bundle_manifest_hash", None)
+	return hashlib.sha256(_json_bytes(canonical)).hexdigest()
+
+
+def _enforce_bundle_size(members):
+	total_bytes = sum(len(content) for content in members.values())
+	if total_bytes > MAX_EXPORT_UNCOMPRESSED_BYTES:
+		frappe.throw(
+			"Audit export serialized content exceeds the safe byte limit. Narrow the export filters.",
+			frappe.ValidationError,
+		)
 
 
 def _safe_member_name(name):
@@ -593,5 +741,5 @@ def _json_dumps(value):
 	return json.dumps(value, sort_keys=True, indent=2, default=str)
 
 
-def _payload_hash(value):
-	return hashlib.sha256(_json_dumps(value).encode("utf-8")).hexdigest()
+def _json_bytes(value):
+	return _json_dumps(value).encode("utf-8")
