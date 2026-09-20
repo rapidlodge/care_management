@@ -436,6 +436,60 @@ class TestMedicationAuditExport(IntegrationTestCase):
 				to_date=nowdate(),
 			)
 
+	def test_final_record_limit_applies_after_referential_closure(self):
+		records = {
+			"Medication Administration Log": [
+				{"name": "initial-plan"},
+				{"name": "referenced-plan"},
+			]
+		}
+		with patch.object(audit_export, "MAX_EXPORT_RECORDS_PER_DOCTYPE", 1):
+			with self.assertRaises(frappe.ValidationError):
+				audit_export._validate_final_record_limits(records)
+
+	def test_attachment_query_is_bounded_by_remaining_allowance(self):
+		file_rows = [frappe._dict(name="file-a"), frappe._dict(name="file-b")]
+		with (
+			patch.object(audit_export, "MAX_EXPORT_ATTACHMENTS", 1),
+			patch.object(audit_export.frappe, "get_all", return_value=file_rows) as get_all,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				audit_export._collect_retained_attachment_inventory(
+					{"Medication Administration Event": [{"name": "event-a"}]}
+				)
+		get_all.assert_called_once()
+		self.assertEqual(get_all.call_args.kwargs["limit"], 2)
+
+	def test_conflicting_medication_plan_item_claims_fail_closed(self):
+		plan_a, _task_a = self._active_plan_and_task()
+		frappe.db.set_value(
+			"Medication Administration Log",
+			plan_a.name,
+			"plan_status",
+			"Superseded",
+			update_modified=False,
+		)
+		plan_b, _task_b = self._active_plan_and_task()
+		item_name = plan_a.medication_items[0].name
+		records = {
+			"Medication Administration Log": [],
+			"Medication Plan Item": [],
+			"Medication Administration Event": [
+				{
+					"name": "conflicting-claim",
+					"medication_plan": plan_b.name,
+					"medication_plan_item": item_name,
+				},
+				{
+					"name": "authoritative-claim",
+					"medication_plan": plan_a.name,
+					"medication_plan_item": item_name,
+				},
+			],
+		}
+		with self.assertRaises(frappe.ValidationError):
+			audit_export._include_referenced_medication_plans(self.participant_a, records)
+
 	def test_manifest_authenticates_every_serialized_content_member(self):
 		self._submitted_event_with_addendum_and_file()
 		members = self._raw_bundle_members(

@@ -418,6 +418,7 @@ def _collect_medication_records(participant, date_filters):
 	records["Discarded Medication Item"] = disposal_items
 	_include_referenced_medication_plans(participant, records)
 	records["Incident"] = _collect_medication_incidents(participant, records)
+	_validate_final_record_limits(records)
 	for doctype in records:
 		records[doctype] = _sort_records(records[doctype])
 	return records
@@ -447,7 +448,7 @@ def _collect_child_dated_family(parent_doctype, child_doctype, parentfield, part
 def _include_referenced_medication_plans(participant, records):
 	plan_names = set()
 	item_names = set()
-	expected_item_parents = {}
+	claimed_item_parents = {}
 	for rows in records.values():
 		for row in rows:
 			plan_name = row.get("medication_plan")
@@ -457,7 +458,10 @@ def _include_referenced_medication_plans(participant, records):
 			if item_name:
 				item_names.add(item_name)
 				if plan_name:
-					expected_item_parents[item_name] = plan_name
+					claimed_item_parents.setdefault(item_name, set()).add(plan_name)
+
+	if any(len(claimed_plans) > 1 for claimed_plans in claimed_item_parents.values()):
+		frappe.throw("Audit export medication plan references are inconsistent.", frappe.ValidationError)
 
 	referenced_items = _get_rows(
 		"Medication Plan Item",
@@ -468,7 +472,8 @@ def _include_referenced_medication_plans(participant, records):
 		frappe.throw("Audit export references a missing medication plan item.", frappe.ValidationError)
 	for item_name, row in items_by_name.items():
 		plan_names.add(row["parent"])
-		if expected_item_parents.get(item_name) and expected_item_parents[item_name] != row["parent"]:
+		claimed_plans = claimed_item_parents.get(item_name, set())
+		if claimed_plans and claimed_plans != {row["parent"]}:
 			frappe.throw("Audit export medication plan references are inconsistent.", frappe.ValidationError)
 
 	referenced_plans = _get_rows(
@@ -500,6 +505,16 @@ def _merge_records(existing, additional):
 	by_name = {row["name"]: row for row in existing}
 	by_name.update({row["name"]: row for row in additional})
 	return list(by_name.values())
+
+
+def _validate_final_record_limits(records):
+	for doctype, rows in records.items():
+		if len(rows) > MAX_EXPORT_RECORDS_PER_DOCTYPE:
+			frappe.throw(
+				f"Audit export scope for {doctype} exceeds the safe limit after referential closure. "
+				"Narrow the export filters.",
+				frappe.ValidationError,
+			)
 
 
 def _collect_medication_incidents(participant, records):
@@ -534,6 +549,7 @@ def _collect_retained_attachment_inventory(records):
 			targets.add((doctype, row["name"]))
 	attachments = []
 	for doctype, name in sorted(targets):
+		remaining = MAX_EXPORT_ATTACHMENTS - len(attachments)
 		rows = frappe.get_all(
 			"File",
 			filters={
@@ -542,13 +558,14 @@ def _collect_retained_attachment_inventory(records):
 			},
 			fields=MEDICATION_RECORD_ALLOWLISTS["File"],
 			order_by="name asc",
+			limit=remaining + 1,
 		)
+		if len(rows) > remaining:
+			frappe.throw(
+				"Audit export attachment scope exceeds the safe limit. Narrow the export filters.",
+				frappe.ValidationError,
+			)
 		for row in rows:
-			if len(attachments) >= MAX_EXPORT_ATTACHMENTS:
-				frappe.throw(
-					"Audit export attachment scope exceeds the safe limit. Narrow the export filters.",
-					frappe.ValidationError,
-				)
 			item = _validated_attachment(row)
 			attachments.append(item)
 	return _sort_records(attachments)
