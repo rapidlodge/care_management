@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import io
 import json
 import os
@@ -222,6 +223,34 @@ class TestMedicationAuditExport(IntegrationTestCase):
 		with zipfile.ZipFile(io.BytesIO(bundle), "r") as archive:
 			return {name: archive.read(name) for name in archive.namelist()}
 
+	def _incident(self, participant=None):
+		doc = frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"participant": participant or self.participant_a,
+				"incident_status": "Open",
+				"incident_type": "Medication Error",
+				"date_of_incident": nowdate(),
+			}
+		)
+		doc.db_insert()
+		return doc
+
+	def _attachment_row(self, content, **overrides):
+		values = {
+			"name": "synthetic-private-file",
+			"file_name": "synthetic.txt",
+			"attached_to_doctype": "Medication Administration Event",
+			"attached_to_name": "synthetic-event",
+			"is_private": 1,
+			"file_size": len(content),
+			"content_hash": hashlib.md5(content, usedforsecurity=False).hexdigest(),
+			"creation": None,
+			"owner": "Administrator",
+		}
+		values.update(overrides)
+		return frappe._dict(values)
+
 	def test_authorized_manager_exports_scoped_medication_audit_bundle(self):
 		plan, event, addendum, file_doc = self._submitted_event_with_addendum_and_file()
 		other_plan, other_task = self._active_plan_and_task(participant=self.participant_b)
@@ -337,14 +366,19 @@ class TestMedicationAuditExport(IntegrationTestCase):
 				"Participant Drug Count",
 				"Drug Count Entry",
 				"drug_count_entries",
-				{"webster_pak_type": "Regular Daily Webster"},
+				{"webster_pak_type": "Regular Daily Webster", "docstatus": 1},
 			),
-			("Shift Medication Check", "Shift Medication Check Entry", "check_entries", {"month": "January"}),
+			(
+				"Shift Medication Check",
+				"Shift Medication Check Entry",
+				"check_entries",
+				{"month": "January", "docstatus": 1},
+			),
 			(
 				"Discarded Medication Register",
 				"Discarded Medication Item",
 				"discarded_items",
-				{"disposal_status": "Finalized"},
+				{"disposal_status": "Finalized", "docstatus": 1},
 			),
 		)
 		selected = []
@@ -382,6 +416,103 @@ class TestMedicationAuditExport(IntegrationTestCase):
 			self.assertTrue(child_names.issubset({row["name"] for row in data[child_doctype]}))
 		for parent_doctype, parent_name in excluded:
 			self.assertNotIn(parent_name, {row["name"] for row in data[parent_doctype]})
+
+	def test_finalized_lifecycle_excludes_draft_and_cancelled_evidence(self):
+		plan, submitted, addendum, _file = self._submitted_event_with_addendum_and_file()
+		draft = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Event",
+				"participant": self.participant_a,
+				"medication_plan": plan.name,
+				"medication_plan_item": plan.medication_items[0].name,
+				"actual_datetime": f"{nowdate()} 09:00:00",
+				"worker": self.worker,
+				"outcome": "Administered",
+			}
+		)
+		draft.db_insert()
+		cancelled = frappe.get_doc(
+			{
+				"doctype": "Medication Administration Event",
+				"participant": self.participant_a,
+				"medication_plan": plan.name,
+				"medication_plan_item": plan.medication_items[0].name,
+				"actual_datetime": f"{nowdate()} 10:00:00",
+				"worker": self.worker,
+				"outcome": "Administered",
+				"docstatus": 2,
+			}
+		)
+		cancelled.db_insert()
+		records = self._read_bundle(
+			audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+		)["records.json"]
+		events = {row["name"]: row for row in records["Medication Administration Event"]}
+		self.assertIn(submitted.name, events)
+		self.assertEqual(events[submitted.name]["docstatus"], 1)
+		self.assertNotIn(draft.name, events)
+		self.assertNotIn(cancelled.name, events)
+		self.assertEqual(records["Medication Event Addendum"][0]["name"], addendum.name)
+		self.assertEqual(records["Medication Event Addendum"][0]["docstatus"], 1)
+
+	def test_child_dated_families_require_finalized_parent(self):
+		selected, selected_children = self._insert_dated_parent(
+			"Participant Drug Count",
+			"Drug Count Entry",
+			"drug_count_entries",
+			self.participant_a,
+			[nowdate(), add_days(nowdate(), -1)],
+			webster_pak_type="Regular Daily Webster",
+			docstatus=1,
+		)
+		draft, _ = self._insert_dated_parent(
+			"Participant Drug Count",
+			"Drug Count Entry",
+			"drug_count_entries",
+			self.participant_a,
+			[nowdate()],
+			webster_pak_type="Regular Daily Webster",
+		)
+		cancelled, _ = self._insert_dated_parent(
+			"Participant Drug Count",
+			"Drug Count Entry",
+			"drug_count_entries",
+			self.participant_a,
+			[nowdate()],
+			webster_pak_type="Regular Daily Webster",
+			docstatus=2,
+		)
+		records = self._read_bundle(
+			audit_export.build_medication_audit_bundle(
+				self.participant_a, user=self.care_manager, from_date=nowdate(), to_date=nowdate()
+			)
+		)["records.json"]
+		parents = {row["name"]: row for row in records["Participant Drug Count"]}
+		self.assertEqual(parents[selected.name]["docstatus"], 1)
+		self.assertNotIn(draft.name, parents)
+		self.assertNotIn(cancelled.name, parents)
+		self.assertTrue(
+			{row.name for row in selected_children}.issubset(
+				{row["name"] for row in records["Drug Count Entry"]}
+			)
+		)
+
+	def test_authoritative_plan_lifecycle_is_enforced(self):
+		plan, _event, _addendum, _file = self._submitted_event_with_addendum_and_file()
+		for status in ("Active", "Superseded", "Archived"):
+			frappe.db.set_value(
+				"Medication Administration Log", plan.name, "plan_status", status, update_modified=False
+			)
+			records = self._read_bundle(
+				audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
+			)["records.json"]
+			self.assertIn(plan.name, {row["name"] for row in records["Medication Administration Log"]})
+		for status in ("Draft", "Needs Review"):
+			frappe.db.set_value(
+				"Medication Administration Log", plan.name, "plan_status", status, update_modified=False
+			)
+			with self.assertRaises(frappe.ValidationError):
+				audit_export.build_medication_audit_bundle(self.participant_a, user=self.care_manager)
 
 	def test_in_range_event_includes_older_referenced_plan_and_item(self):
 		plan, event, _addendum, _file = self._submitted_event_with_addendum_and_file()
@@ -459,6 +590,140 @@ class TestMedicationAuditExport(IntegrationTestCase):
 				)
 		get_all.assert_called_once()
 		self.assertEqual(get_all.call_args.kwargs["limit"], 2)
+
+	def test_attachment_queries_are_batched_by_target_doctype(self):
+		records = {
+			"Medication Administration Event": [{"name": "event-a"}, {"name": "event-b"}],
+			"Incident": [{"name": "incident-a"}],
+		}
+		with patch.object(audit_export.frappe, "get_all", return_value=[]) as get_all:
+			self.assertEqual(audit_export._collect_retained_attachment_inventory(records), [])
+		self.assertEqual(get_all.call_count, 2)
+		first_filters = get_all.call_args_list[0].kwargs["filters"]
+		self.assertEqual(first_filters["attached_to_name"], ["in", ["incident-a"]])
+		second_filters = get_all.call_args_list[1].kwargs["filters"]
+		self.assertEqual(second_filters["attached_to_name"], ["in", ["event-a", "event-b"]])
+		self.assertTrue(
+			all(
+				call.kwargs["limit"] == audit_export.MAX_EXPORT_ATTACHMENTS + 1
+				for call in get_all.call_args_list
+			)
+		)
+
+	def test_version_queries_are_batched_and_limits_fail_closed(self):
+		records = {
+			"Medication Administration Event": [{"name": "event-a"}, {"name": "event-b"}],
+			"Incident": [{"name": "incident-a"}],
+		}
+		with patch.object(audit_export.frappe, "get_all", return_value=[]) as get_all:
+			self.assertEqual(audit_export._collect_version_metadata(records), [])
+		self.assertEqual(get_all.call_count, 2)
+		self.assertEqual(
+			get_all.call_args_list[0].kwargs["filters"]["docname"], ["in", ["event-a", "event-b"]]
+		)
+		self.assertTrue(
+			all(
+				call.kwargs["limit"] == audit_export.MAX_EXPORT_VERSIONS + 1
+				for call in get_all.call_args_list
+			)
+		)
+
+		versions = [
+			frappe._dict(name="version-a", ref_doctype="Incident", docname="incident-a"),
+			frappe._dict(name="version-b", ref_doctype="Incident", docname="incident-a"),
+		]
+		with (
+			patch.object(audit_export, "MAX_EXPORT_VERSIONS", 1),
+			patch.object(audit_export.frappe, "get_all", return_value=versions),
+			self.assertRaises(frappe.ValidationError),
+		):
+			audit_export._collect_version_metadata({"Incident": [{"name": "incident-a"}]})
+		with (
+			patch.object(audit_export, "MAX_EXPORT_VERSIONS", 2),
+			patch.object(audit_export, "MAX_EXPORT_VERSIONS_PER_RECORD", 1),
+			patch.object(audit_export.frappe, "get_all", return_value=versions),
+			self.assertRaises(frappe.ValidationError),
+		):
+			audit_export._collect_version_metadata({"Incident": [{"name": "incident-a"}]})
+		with (
+			patch.object(audit_export, "MAX_EXPORT_VERSIONS", 2),
+			patch.object(audit_export, "MAX_EXPORT_VERSIONS_PER_RECORD", 2),
+			patch.object(audit_export.frappe, "get_all", return_value=versions),
+		):
+			self.assertEqual(
+				len(audit_export._collect_version_metadata({"Incident": [{"name": "incident-a"}]})), 2
+			)
+
+	def test_attachment_hashing_is_streamed_and_byte_bounded(self):
+		content = b"abcdefgh"
+		row = self._attachment_row(content)
+		with (
+			patch("care_management.care_management.audit_export.get_file_path", return_value="synthetic"),
+			patch("builtins.open", return_value=io.BytesIO(content)),
+			patch.object(audit_export, "ATTACHMENT_READ_CHUNK_BYTES", 3),
+		):
+			item, validated_bytes = audit_export._validated_attachment(row, validated_bytes=0)
+		self.assertEqual(validated_bytes, len(content))
+		self.assertEqual(item["sha256"], hashlib.sha256(content).hexdigest())
+		self.assertNotIn("bytearray", inspect.getsource(audit_export._validated_attachment))
+
+		with (
+			patch.object(audit_export, "MAX_EXPORT_ATTACHMENT_BYTES", len(content)),
+			patch("care_management.care_management.audit_export.get_file_path", return_value="synthetic"),
+			patch("builtins.open", return_value=io.BytesIO(content)),
+		):
+			audit_export._validated_attachment(row, validated_bytes=0)
+		with (
+			patch.object(audit_export, "MAX_EXPORT_ATTACHMENT_BYTES", len(content) - 1),
+			patch("builtins.open") as open_file,
+			self.assertRaises(frappe.ValidationError),
+		):
+			audit_export._validated_attachment(row, validated_bytes=0)
+		open_file.assert_not_called()
+
+	def test_attachment_aggregate_stored_and_actual_overflow_fail_closed(self):
+		content = b"abcdef"
+		row = self._attachment_row(content)
+		with (
+			patch.object(audit_export, "MAX_EXPORT_TOTAL_ATTACHMENT_BYTES", 10),
+			patch("builtins.open") as open_file,
+			self.assertRaises(frappe.ValidationError),
+		):
+			audit_export._validated_attachment(row, validated_bytes=5)
+		open_file.assert_not_called()
+
+		misstated = self._attachment_row(content, file_size=4)
+		with (
+			patch.object(audit_export, "MAX_EXPORT_TOTAL_ATTACHMENT_BYTES", 5),
+			patch.object(audit_export, "ATTACHMENT_READ_CHUNK_BYTES", 2),
+			patch("care_management.care_management.audit_export.get_file_path", return_value="synthetic"),
+			patch("builtins.open", return_value=io.BytesIO(content)),
+			self.assertRaises(frappe.ValidationError),
+		):
+			audit_export._validated_attachment(misstated, validated_bytes=0)
+
+	def test_incident_references_fail_closed_and_preserve_valid_rows(self):
+		incident_a = self._incident()
+		incident_b = self._incident()
+		records = {
+			"Medication Administration Event": [{"name": "event-a", "incident": incident_a.name}],
+			"Controlled Medication Transaction": [{"name": "transaction-a", "incident": incident_b.name}],
+		}
+		rows = audit_export._collect_medication_incidents(self.participant_a, records)
+		self.assertEqual({row["name"] for row in rows}, {incident_a.name, incident_b.name})
+
+		records["Medication Administration Event"][0]["incident"] = "missing-incident"
+		with self.assertRaises(frappe.ValidationError):
+			audit_export._collect_medication_incidents(self.participant_a, records)
+
+		other_incident = self._incident(self.participant_b)
+		records["Medication Administration Event"][0]["incident"] = other_incident.name
+		with self.assertRaises(frappe.ValidationError):
+			audit_export._collect_medication_incidents(self.participant_a, records)
+
+		with patch.object(audit_export, "MAX_EXPORT_RECORDS_PER_DOCTYPE", 1):
+			with self.assertRaises(frappe.ValidationError):
+				audit_export._validate_final_record_limits({"Incident": rows})
 
 	def test_conflicting_medication_plan_item_claims_fail_closed(self):
 		plan_a, _task_a = self._active_plan_and_task()
@@ -543,9 +808,15 @@ class TestMedicationAuditExport(IntegrationTestCase):
 		with (
 			patch.object(audit_export, "MAX_EXPORT_VERSIONS", 0),
 			patch.object(
-				audit_export,
-				"_get_rows",
-				return_value=[{"name": "synthetic-version"}],
+				audit_export.frappe,
+				"get_all",
+				return_value=[
+					frappe._dict(
+						name="synthetic-version",
+						ref_doctype="Medication Administration Event",
+						docname="synthetic-event",
+					)
+				],
 			),
 		):
 			with self.assertRaises(frappe.ValidationError):

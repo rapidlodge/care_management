@@ -9,7 +9,7 @@ from datetime import date, datetime
 
 import frappe
 from frappe.utils import getdate, now_datetime
-from frappe.utils.file_manager import get_content_hash, get_file_path
+from frappe.utils.file_manager import get_file_path
 
 from care_management.care_management import permissions
 
@@ -19,7 +19,13 @@ EXPORT_ROLES = frozenset({"Care Manager", "System Manager"})
 MAX_EXPORT_RECORDS_PER_DOCTYPE = 500
 MAX_EXPORT_ATTACHMENTS = 1000
 MAX_EXPORT_VERSIONS = 5000
+MAX_EXPORT_VERSIONS_PER_RECORD = 50
 MAX_EXPORT_UNCOMPRESSED_BYTES = 25 * 1024 * 1024
+MAX_EXPORT_ATTACHMENT_BYTES = 10 * 1024 * 1024
+MAX_EXPORT_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024
+ATTACHMENT_READ_CHUNK_BYTES = 1024 * 1024
+
+AUTHORITATIVE_PLAN_STATUSES = frozenset({"Active", "Superseded", "Archived"})
 
 CHILD_DATE_SCOPE_RULE = (
 	"Parents are selected when at least one child date intersects the requested range; "
@@ -66,6 +72,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Medication Administration Event": (
 		"name",
+		"docstatus",
 		"participant",
 		"medication_plan",
 		"medication_plan_item",
@@ -93,6 +100,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Medication Event Addendum": (
 		"name",
+		"docstatus",
 		"medication_event",
 		"participant",
 		"medication_plan",
@@ -116,6 +124,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Medication PRN Effectiveness Review": (
 		"name",
+		"docstatus",
 		"participant",
 		"medication_event",
 		"medication_plan",
@@ -131,6 +140,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Controlled Medication Transaction": (
 		"name",
+		"docstatus",
 		"participant",
 		"medication_plan",
 		"medication_plan_item",
@@ -155,6 +165,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Participant Drug Count": (
 		"name",
+		"docstatus",
 		"participant",
 		"observed_by",
 		"webster_pak_type",
@@ -183,6 +194,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Shift Medication Check": (
 		"name",
+		"docstatus",
 		"participant",
 		"checked_by",
 		"month",
@@ -204,6 +216,7 @@ MEDICATION_RECORD_ALLOWLISTS = {
 	),
 	"Discarded Medication Register": (
 		"name",
+		"docstatus",
 		"participant",
 		"prepared_by",
 		"disposal_status",
@@ -364,7 +377,11 @@ def _collect_medication_records(participant, date_filters):
 	records = {doctype: [] for doctype in MEDICATION_RECORD_ALLOWLISTS if doctype not in {"File", "Version"}}
 	plans = _get_rows(
 		"Medication Administration Log",
-		{"participant": participant, **_date_range_filter("week_commencing", date_filters)},
+		{
+			"participant": participant,
+			"plan_status": ["in", sorted(AUTHORITATIVE_PLAN_STATUSES)],
+			**_date_range_filter("week_commencing", date_filters),
+		},
 	)
 	records["Medication Administration Log"] = plans
 	plan_names = [row["name"] for row in plans]
@@ -373,21 +390,37 @@ def _collect_medication_records(participant, date_filters):
 	)
 	events = _get_rows(
 		"Medication Administration Event",
-		{"participant": participant, **_date_range_filter("actual_datetime", date_filters)},
+		{
+			"participant": participant,
+			"docstatus": 1,
+			**_date_range_filter("actual_datetime", date_filters),
+		},
 	)
 	records["Medication Administration Event"] = events
 	event_names = [row["name"] for row in events]
 	records["Medication Event Addendum"] = _get_rows(
 		"Medication Event Addendum",
-		{"participant": participant, "medication_event": ["in", event_names or ["__none__"]]},
+		{
+			"participant": participant,
+			"docstatus": 1,
+			"medication_event": ["in", event_names or ["__none__"]],
+		},
 	)
 	records["Medication PRN Effectiveness Review"] = _get_rows(
 		"Medication PRN Effectiveness Review",
-		{"participant": participant, "medication_event": ["in", event_names or ["__none__"]]},
+		{
+			"participant": participant,
+			"docstatus": 1,
+			"medication_event": ["in", event_names or ["__none__"]],
+		},
 	)
 	records["Controlled Medication Transaction"] = _get_rows(
 		"Controlled Medication Transaction",
-		{"participant": participant, **_date_range_filter("posting_datetime", date_filters)},
+		{
+			"participant": participant,
+			"docstatus": 1,
+			**_date_range_filter("posting_datetime", date_filters),
+		},
 	)
 	drug_counts, drug_count_entries = _collect_child_dated_family(
 		"Participant Drug Count",
@@ -425,7 +458,7 @@ def _collect_medication_records(participant, date_filters):
 
 
 def _collect_child_dated_family(parent_doctype, child_doctype, parentfield, participant, date_filters):
-	candidate_parents = _get_rows(parent_doctype, {"participant": participant})
+	candidate_parents = _get_rows(parent_doctype, {"participant": participant, "docstatus": 1})
 	if not date_filters.get("from_date") and not date_filters.get("to_date"):
 		selected_parents = candidate_parents
 	else:
@@ -489,6 +522,11 @@ def _include_referenced_medication_plans(participant, records):
 		frappe.throw(
 			"Audit export references medication evidence for another participant.", frappe.ValidationError
 		)
+	if any(row.get("plan_status") not in AUTHORITATIVE_PLAN_STATUSES for row in referenced_plans):
+		frappe.throw(
+			"Audit export references a medication plan that is not authoritative.",
+			frappe.ValidationError,
+		)
 
 	all_plan_items = _get_child_rows(
 		"Medication Plan Item",
@@ -539,22 +577,25 @@ def _collect_medication_incidents(participant, records):
 	if not incident_names:
 		return []
 	rows = _get_rows("Incident", {"participant": participant, "name": ["in", sorted(incident_names)]})
+	if incident_names != {row["name"] for row in rows}:
+		frappe.throw("Audit export Incident references are invalid.", frappe.ValidationError)
 	return rows
 
 
 def _collect_retained_attachment_inventory(records):
-	targets = set()
+	targets_by_doctype = {}
 	for doctype in permissions.RETAINED_EVIDENCE_DOCTYPES:
 		for row in records.get(doctype, []):
-			targets.add((doctype, row["name"]))
+			targets_by_doctype.setdefault(doctype, set()).add(row["name"])
 	attachments = []
-	for doctype, name in sorted(targets):
+	validated_bytes = 0
+	for doctype, names in sorted(targets_by_doctype.items()):
 		remaining = MAX_EXPORT_ATTACHMENTS - len(attachments)
 		rows = frappe.get_all(
 			"File",
 			filters={
 				"attached_to_doctype": doctype,
-				"attached_to_name": name,
+				"attached_to_name": ["in", sorted(names)],
 			},
 			fields=MEDICATION_RECORD_ALLOWLISTS["File"],
 			order_by="name asc",
@@ -566,7 +607,9 @@ def _collect_retained_attachment_inventory(records):
 				frappe.ValidationError,
 			)
 		for row in rows:
-			item = _validated_attachment(row)
+			if row.attached_to_doctype != doctype or row.attached_to_name not in names:
+				frappe.throw("Audit export attachment references are invalid.", frappe.ValidationError)
+			item, validated_bytes = _validated_attachment(row, validated_bytes=validated_bytes)
 			attachments.append(item)
 	return _sort_records(attachments)
 
@@ -576,19 +619,34 @@ def _collect_version_metadata(records):
 	for doctype, rows in records.items():
 		if doctype in {"File", "Version"}:
 			continue
-		for row in rows:
-			version_rows.extend(
-				_get_rows(
-					"Version",
-					{"ref_doctype": doctype, "docname": row["name"]},
-					limit=50,
-				)
+		docnames = sorted({row["name"] for row in rows})
+		if not docnames:
+			continue
+		remaining = MAX_EXPORT_VERSIONS - len(version_rows)
+		group_rows = frappe.get_all(
+			"Version",
+			filters={"ref_doctype": doctype, "docname": ["in", docnames]},
+			fields=MEDICATION_RECORD_ALLOWLISTS["Version"],
+			order_by="creation asc, name asc",
+			limit=remaining + 1,
+		)
+		if len(group_rows) > remaining:
+			frappe.throw(
+				"Audit export Version scope exceeds the safe limit. Narrow the export filters.",
+				frappe.ValidationError,
 			)
-			if len(version_rows) > MAX_EXPORT_VERSIONS:
+		per_record_counts = {}
+		for row in group_rows:
+			if row.ref_doctype != doctype or row.docname not in docnames:
+				frappe.throw("Audit export Version references are invalid.", frappe.ValidationError)
+			key = (row.ref_doctype, row.docname)
+			per_record_counts[key] = per_record_counts.get(key, 0) + 1
+			if per_record_counts[key] > MAX_EXPORT_VERSIONS_PER_RECORD:
 				frappe.throw(
-					"Audit export Version scope exceeds the safe limit. Narrow the export filters.",
+					"Audit export Version history for a record exceeds the safe limit.",
 					frappe.ValidationError,
 				)
+		version_rows.extend(_clean_row(row) for row in group_rows)
 	return _sort_records(version_rows)
 
 
@@ -643,32 +701,52 @@ def _sort_records(rows):
 	)
 
 
-def _validated_attachment(row):
+def _validated_attachment(row, validated_bytes):
 	if not bool(row.is_private):
 		frappe.throw(
 			"Audit export cannot include public retained-evidence attachments.", frappe.ValidationError
 		)
+	try:
+		stored_size = int(row.file_size)
+	except (TypeError, ValueError):
+		frappe.throw("Audit export attachment size metadata is invalid.", frappe.ValidationError)
+	if stored_size < 0:
+		frappe.throw("Audit export attachment size metadata is invalid.", frappe.ValidationError)
+	if stored_size > MAX_EXPORT_ATTACHMENT_BYTES:
+		frappe.throw("Audit export attachment exceeds the safe byte limit.", frappe.ValidationError)
+	if validated_bytes + stored_size > MAX_EXPORT_TOTAL_ATTACHMENT_BYTES:
+		frappe.throw("Audit export attachments exceed the aggregate safe byte limit.", frappe.ValidationError)
+
 	path = get_file_path(row.name)
 	sha256 = hashlib.sha256()
-	content = bytearray()
+	content_hash = hashlib.md5(usedforsecurity=False)
+	actual_size = 0
 	try:
 		with open(path, "rb") as handle:
-			for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+			for chunk in iter(lambda: handle.read(ATTACHMENT_READ_CHUNK_BYTES), b""):
+				actual_size += len(chunk)
+				if actual_size > MAX_EXPORT_ATTACHMENT_BYTES:
+					frappe.throw(
+						"Audit export attachment exceeds the safe byte limit.", frappe.ValidationError
+					)
+				if validated_bytes + actual_size > MAX_EXPORT_TOTAL_ATTACHMENT_BYTES:
+					frappe.throw(
+						"Audit export attachments exceed the aggregate safe byte limit.",
+						frappe.ValidationError,
+					)
 				sha256.update(chunk)
-				content.extend(chunk)
+				content_hash.update(chunk)
 	except (FileNotFoundError, OSError, TypeError):
 		frappe.throw("Audit export retained-evidence attachment bytes are missing.", frappe.ValidationError)
-	actual_size = len(content)
-	actual_content_hash = get_content_hash(bytes(content))
-	if row.file_size is None or int(row.file_size) != actual_size:
+	if stored_size != actual_size:
 		frappe.throw("Audit export attachment size does not match the stored bytes.", frappe.ValidationError)
-	if not row.content_hash or row.content_hash != actual_content_hash:
+	if not row.content_hash or row.content_hash != content_hash.hexdigest():
 		frappe.throw(
 			"Audit export attachment content hash does not match the stored bytes.", frappe.ValidationError
 		)
 	item = _clean_row(row)
 	item["sha256"] = sha256.hexdigest()
-	return item
+	return item, validated_bytes + actual_size
 
 
 def _build_manifest(participant, user, date_filters, records, attachments, versions, member_integrity):
