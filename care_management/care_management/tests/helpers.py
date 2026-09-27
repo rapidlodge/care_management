@@ -1,9 +1,7 @@
 import re
 
 import frappe
-from frappe.utils import today
-from frappe.utils import add_days, nowdate
-
+from frappe.utils import add_days, nowdate, today
 
 TEST_PARTICIPANT_NAME = "R1 Test Participant"
 
@@ -217,6 +215,65 @@ def ensure_r2c1_participant(suffix, medicare_number):
 	)
 	doc.insert(ignore_permissions=True)
 	return doc.name
+
+
+def make_r4_participant(suffix, participant_id=None):
+	"""Build an unsaved valid Participant Profile for identifier tests."""
+	living_arrangement = _ensure_named_master(
+		"Living Arrangement",
+		"arrangement_name",
+		"R4 Test Living Arrangement",
+	)
+	consent_type = _ensure_named_master(
+		"Consent Type",
+		"consent_name",
+		"R4 Test Consent",
+	)
+	secondary_disability = _ensure_named_master(
+		"Secondary Disability Type",
+		"disability_name",
+		"R4 Test Secondary Disability",
+	)
+	return frappe.get_doc(
+		{
+			"doctype": "Participant Profile",
+			"participant": f"R4 Test Participant {suffix}",
+			"participant_id": participant_id,
+			"legally_competent": "Yes",
+			"marital_status": "Single",
+			"living_arrangements": [{"living_arrangement": living_arrangement}],
+			"religious_or_spiritual": "No",
+			"religion": "No Religion",
+			"cald": "No",
+			"atsi": "Neither",
+			"consent_received": [{"consent_type": consent_type}],
+			"organ_cadaver_donor": "Unknown",
+			"chap": "No",
+			"peep": "No",
+			"risk_or_alert_present": "No",
+			"risk_or_alert": "Other",
+			"interpreter_required": "No",
+			"english_ability": "Fluent",
+			"communication_supports_required": "No",
+			"communication_type": "Verbal",
+			"primary_disability": "Other",
+			"secondary_disability": [{"secondary_disability": secondary_disability}],
+			"disability_limitations": "Mild",
+			"ability_to_act_in_emergency": "Yes",
+			"end_of_life_plan": "No",
+			"bsp_plan": "No",
+			"receive_mobility_allowance": "No",
+			"medicare_number": "3234567890",
+			"crn_number": f"R4-{suffix}-CRN",
+			"private_health_care_cover": "No",
+			"companion_card": "No",
+			"funding_type": "Private",
+			"ndia_funding_type": "Plan Managed",
+			"pharmacist_name": "R4 Test Pharmacist",
+			"asthma_action_plan": "N/A",
+			"ascia_action_plans": "N/A",
+		}
+	)
 
 
 def ensure_r2c1_user(suffix, roles):
