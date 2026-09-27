@@ -89,6 +89,22 @@ class TestParticipantIdentity(IntegrationTestCase):
 		for value in (None, "", "PTP-not-valid", "PTP-" + "f" * 32):
 			self.assertIsNone(resolve_participant_id(value, user=user))
 
+	def test_disabled_state_is_not_applicable_and_existing_lifecycle_fails_closed(self):
+		meta = frappe.get_meta("Participant Profile")
+		self.assertFalse(meta.has_field("disabled"))
+		self.assertFalse(frappe.db.has_column("Participant Profile", "disabled"))
+		self.assertFalse(meta.is_submittable)
+		user = ensure_r2c1_user("R4 Resolver Disabled State", ["Care Manager"])
+		self.assertIsNone(resolve_participant_id("PTP-not-valid", user=user))
+
+	def test_archived_state_is_not_applicable_and_existing_lifecycle_fails_closed(self):
+		meta = frappe.get_meta("Participant Profile")
+		self.assertFalse(meta.has_field("archived"))
+		self.assertFalse(frappe.db.has_column("Participant Profile", "archived"))
+		self.assertFalse(meta.has_field("status"))
+		user = ensure_r2c1_user("R4 Resolver Archived State", ["Care Manager"])
+		self.assertIsNone(resolve_participant_id("PTP-" + "f" * 32, user=user))
+
 	def test_conflicting_participant_claim_fails_closed(self):
 		candidate = "PTP-" + "2" * 32
 		user = ensure_r2c1_user("R4 Resolver Conflict", ["Care Manager"])
@@ -141,6 +157,62 @@ class TestParticipantIdentity(IntegrationTestCase):
 		):
 			self.assertRaises(frappe.ValidationError, backfill_participant_ids._backfill_participant_ids)
 		self.assertFalse(frappe.db.get_value("Participant Profile", missing.name, "participant_id"))
+
+	def test_backfill_rejects_malformed_existing_identifier_without_replacement(self):
+		malformed = make_r4_participant("Backfill Malformed").insert(ignore_permissions=True)
+		unrelated = make_r4_participant("Backfill Malformed Unrelated").insert(ignore_permissions=True)
+		unrelated_identifier = unrelated.participant_id
+		frappe.db.set_value(
+			"Participant Profile",
+			malformed.name,
+			"participant_id",
+			"INVALID-R4-IDENTIFIER",
+			update_modified=False,
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "backfill found a malformed existing value"):
+			backfill_participant_ids._backfill_participant_ids()
+
+		self.assertEqual(
+			frappe.db.get_value("Participant Profile", malformed.name, "participant_id"),
+			"INVALID-R4-IDENTIFIER",
+		)
+		self.assertEqual(
+			frappe.db.get_value("Participant Profile", unrelated.name, "participant_id"),
+			unrelated_identifier,
+		)
+
+	def test_backfill_write_failure_rolls_back_prior_assignment(self):
+		first = make_r4_participant("Backfill Write Rollback A").insert(ignore_permissions=True)
+		second = make_r4_participant("Backfill Write Rollback B").insert(ignore_permissions=True)
+		for doc in (first, second):
+			frappe.db.set_value(
+				"Participant Profile", doc.name, "participant_id", None, update_modified=False
+			)
+
+		frappe.db.savepoint("r4_backfill_write_phase")
+		original_set_value = frappe.db.set_value
+		write_attempts = []
+
+		def fail_after_first_assignment(doctype, name, fieldname, value, **kwargs):
+			if doctype == "Participant Profile" and fieldname == "participant_id":
+				write_attempts.append(name)
+				if len(write_attempts) == 2:
+					raise frappe.ValidationError("Injected R4 write-phase failure")
+			return original_set_value(doctype, name, fieldname, value, **kwargs)
+
+		with patch.object(frappe.db, "set_value", side_effect=fail_after_first_assignment):
+			with self.assertRaisesRegex(frappe.ValidationError, "write-phase failure"):
+				backfill_participant_ids._backfill_participant_ids()
+
+		self.assertEqual(len(write_attempts), 2)
+		self.assertTrue(frappe.db.get_value("Participant Profile", write_attempts[0], "participant_id"))
+		frappe.db.rollback(save_point="r4_backfill_write_phase")
+		self.assertFalse(frappe.db.get_value("Participant Profile", first.name, "participant_id"))
+		self.assertFalse(frappe.db.get_value("Participant Profile", second.name, "participant_id"))
+		self.assertEqual(backfill_participant_ids._backfill_participant_ids(), 2)
+		self.assertTrue(frappe.db.get_value("Participant Profile", first.name, "participant_id"))
+		self.assertTrue(frappe.db.get_value("Participant Profile", second.name, "participant_id"))
 
 	def test_existing_links_and_document_name_remain_unchanged(self):
 		doc = make_r4_participant("Link Stable").insert(ignore_permissions=True)
