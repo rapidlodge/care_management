@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "participant",
+  "participant_id",
   "sb_about_participant",
   "legally_competent",
   "cb_about_1",
@@ -97,6 +98,18 @@
    "label": "Participant",
    "options": "Customer",
    "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "participant_id",
+   "fieldtype": "Data",
+   "label": "Participant ID",
+   "length": 36,
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1,
+   "reqd": 1,
+   "set_only_once": 1,
    "unique": 1
   },
   {

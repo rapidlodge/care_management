@@ -6,6 +6,7 @@ from types import MappingProxyType
 
 import frappe
 
+from care_management.care_management.participant_identity import resolve_participant_id
 
 SYSTEM_MANAGER_ROLE = "System Manager"
 CARE_MANAGER_ROLE = "Care Manager"
@@ -79,9 +80,7 @@ RESOLVABLE_PARTICIPANT_DOCTYPES = frozenset(
 )
 
 PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
-	{"Participant Profile"}
-	| DIRECT_PARTICIPANT_FIELDS.keys()
-	| INDIRECT_PARTICIPANT_PATHS.keys()
+	{"Participant Profile"} | DIRECT_PARTICIPANT_FIELDS.keys() | INDIRECT_PARTICIPANT_PATHS.keys()
 )
 
 STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
@@ -637,7 +636,9 @@ def validate_retained_evidence_attachments(doc, method=None):
 	name = getattr(doc, "name", None)
 	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
 		return
-	requires_private_files = method == "before_submit" or is_retained_evidence_document(doctype, name, doc=doc)
+	requires_private_files = method == "before_submit" or is_retained_evidence_document(
+		doctype, name, doc=doc
+	)
 	if not requires_private_files:
 		return
 	public_files = frappe.get_all(
@@ -712,7 +713,9 @@ def _retained_file_content_write_attempted(doc, previous):
 
 
 def _is_new_file_insert(doc):
-	return bool(getattr(doc, "is_new", lambda: False)()) and not frappe.db.exists("File", getattr(doc, "name", None))
+	return bool(getattr(doc, "is_new", lambda: False)()) and not frappe.db.exists(
+		"File", getattr(doc, "name", None)
+	)
 
 
 def _file_attachment_target(doc):
@@ -797,7 +800,9 @@ def _prn_review_owned_by_worker(doc, user):
 	if not name:
 		return False
 	if isinstance(doc, str):
-		return frappe.db.get_value("Medication PRN Effectiveness Review", name, "administering_worker") == user
+		return (
+			frappe.db.get_value("Medication PRN Effectiveness Review", name, "administering_worker") == user
+		)
 	return _field_value("Medication PRN Effectiveness Review", doc, "administering_worker") == user
 
 
@@ -972,7 +977,9 @@ def search_applicable_participants(
 	filters=None,
 	allowed_roles=STANDARD_DOCUMENT_ACCESS_ROLES,
 ):
-	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Participant Profile", {"name", "participant"})
+	search = _search_inputs(
+		doctype, txt, searchfield, start, page_len, "Participant Profile", {"name", "participant"}
+	)
 	if not search:
 		return []
 	resolved_user = normalize_user()
@@ -1045,7 +1052,9 @@ def search_medication_event_participants(doctype, txt, searchfield, start, page_
 
 
 def search_medication_event_plans(doctype, txt, searchfield, start, page_len, filters=None):
-	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"})
+	search = _search_inputs(
+		doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"}
+	)
 	if not search:
 		return []
 	resolved_user = normalize_user()
@@ -1152,7 +1161,9 @@ def search_medication_event_support_tasks(doctype, txt, searchfield, start, page
 		)
 	if search.txt:
 		like_value = _sql_value(f"%{search.txt}%")
-		conditions.append(f"(support_task.`name` like {like_value} or support_task.`task_name` like {like_value})")
+		conditions.append(
+			f"(support_task.`name` like {like_value} or support_task.`task_name` like {like_value})"
+		)
 	where_clause = " and ".join(conditions)
 
 	return frappe.db.sql(
@@ -1199,7 +1210,9 @@ def search_medication_event_addendum_participants(doctype, txt, searchfield, sta
 
 
 def search_medication_event_addendum_events(doctype, txt, searchfield, start, page_len, filters=None):
-	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"})
+	search = _search_inputs(
+		doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"}
+	)
 	if not search:
 		return []
 	resolved_user = normalize_user()
@@ -1248,7 +1261,9 @@ def search_medication_event_addendum_events(doctype, txt, searchfield, start, pa
 
 
 def search_medication_prn_review_events(doctype, txt, searchfield, start, page_len, filters=None):
-	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"})
+	search = _search_inputs(
+		doctype, txt, searchfield, start, page_len, "Medication Administration Event", {"name"}
+	)
 	if not search:
 		return []
 	resolved_user = normalize_user()
@@ -1301,7 +1316,9 @@ def search_medication_prn_review_events(doctype, txt, searchfield, start, page_l
 
 
 def search_medication_prn_review_plans(doctype, txt, searchfield, start, page_len, filters=None):
-	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"})
+	search = _search_inputs(
+		doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"}
+	)
 	if not search:
 		return []
 	resolved_user = normalize_user()
@@ -1357,7 +1374,9 @@ def search_controlled_transaction_participants(doctype, txt, searchfield, start,
 
 
 def search_controlled_transaction_plans(doctype, txt, searchfield, start, page_len, filters=None):
-	search = _search_inputs(doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"})
+	search = _search_inputs(
+		doctype, txt, searchfield, start, page_len, "Medication Administration Log", {"name"}
+	)
 	if not search:
 		return []
 	resolved_user = normalize_user()
@@ -1502,14 +1521,7 @@ def search_incident_participants(doctype, txt, searchfield, start, page_len, fil
 
 
 def permission_query_condition_method_name(doctype):
-	suffix = (
-		str(doctype or "")
-		.strip()
-		.lower()
-		.replace("-", "_")
-		.replace("/", "_")
-		.replace(" ", "_")
-	)
+	suffix = str(doctype or "").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
 	return f"get_{suffix}_permission_query_conditions"
 
 
@@ -1525,24 +1537,22 @@ def _make_permission_query_condition(bound_doctype):
 
 
 for _participant_doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES):
-	globals()[permission_query_condition_method_name(_participant_doctype)] = _make_permission_query_condition(
-		_participant_doctype
+	globals()[permission_query_condition_method_name(_participant_doctype)] = (
+		_make_permission_query_condition(_participant_doctype)
 	)
 
 
-PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS = MappingProxyType(
-	{
-		doctype: f"care_management.care_management.permissions.{permission_query_condition_method_name(doctype)}"
-		for doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES)
-	}
-)
+# Hook module globals are cached through pickle, so these exported maps must be
+# ordinary dictionaries rather than immutable mapping proxies.
+PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS = {
+	doctype: f"care_management.care_management.permissions.{permission_query_condition_method_name(doctype)}"
+	for doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES)
+}
 
-PARTICIPANT_DOCUMENT_PERMISSION_HOOKS = MappingProxyType(
-	{
-		doctype: "care_management.care_management.permissions.has_participant_document_permission"
-		for doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES)
-	}
-)
+PARTICIPANT_DOCUMENT_PERMISSION_HOOKS = {
+	doctype: "care_management.care_management.permissions.has_participant_document_permission"
+	for doctype in sorted(PROTECTED_PARTICIPANT_DOCTYPES)
+}
 
 
 def _docshare_user_is_shareable(user):
@@ -1560,7 +1570,9 @@ def _docshare_user_is_shareable(user):
 
 
 def validate_participant_docshare(doc, method=None):
-	share_doctype = str(doc.get("share_doctype") if hasattr(doc, "get") else getattr(doc, "share_doctype", "")).strip()
+	share_doctype = str(
+		doc.get("share_doctype") if hasattr(doc, "get") else getattr(doc, "share_doctype", "")
+	).strip()
 	if share_doctype not in PROTECTED_PARTICIPANT_DOCTYPES:
 		return None
 

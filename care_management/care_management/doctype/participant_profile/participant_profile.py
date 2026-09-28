@@ -7,11 +7,31 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from care_management.care_management.participant_identity import (
+	generate_participant_id,
+	is_valid_participant_id,
+)
+
 
 class ParticipantProfile(Document):
+	def before_insert(self):
+		if self.participant_id:
+			frappe.throw(_("Participant ID is assigned by the server."))
+		self.participant_id = generate_participant_id()
+
 	def validate(self):
+		self.validate_participant_id()
 		self.validate_medicare_number()
 		self.validate_conditional_mandatory_fields()
+
+	def validate_participant_id(self):
+		if not is_valid_participant_id(self.participant_id):
+			frappe.throw(_("Participant ID is missing or invalid."))
+		if self.is_new():
+			return
+		persisted = frappe.db.get_value("Participant Profile", self.name, "participant_id")
+		if persisted != self.participant_id:
+			frappe.throw(_("Participant ID cannot be changed after assignment."))
 
 	def validate_medicare_number(self):
 		"""Australian Medicare numbers are 10 or 11 digits."""
@@ -31,7 +51,11 @@ class ParticipantProfile(Document):
 		"""
 		checks = [
 			(self.risk_or_alert_present == "Yes", "risk_or_alert", _("Risk or Alert")),
-			(self.interpreter_required == "Yes", "interpreter_language_required", _("Interpreter Language Required Specify")),
+			(
+				self.interpreter_required == "Yes",
+				"interpreter_language_required",
+				_("Interpreter Language Required Specify"),
+			),
 			(self.end_of_life_plan == "Yes", "date_of_last_elp_meeting", _("Date of last ELP meeting")),
 			(self.bsp_plan == "Yes", "bsp_plan_review_date", _("BSP Plan Review Date")),
 		]

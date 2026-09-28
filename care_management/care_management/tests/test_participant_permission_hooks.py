@@ -1,19 +1,20 @@
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
 import frappe
 from frappe.tests import IntegrationTestCase
 
 from care_management.care_management import permissions
+from care_management.care_management.audit_export import can_export_medication_audit_bundle
+from care_management.care_management.participant_identity import resolve_participant_id
 from care_management.care_management.tests.helpers import (
 	ensure_r2c1_participant,
-	ensure_r2c1_task_assignment,
 	ensure_r2c1_support_plan,
 	ensure_r2c1_support_task,
+	ensure_r2c1_task_assignment,
 	ensure_r2c1_user,
 	ensure_r2c1_user_permission,
 )
-
 
 EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 	{
@@ -186,7 +187,9 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 	def test_hooks_register_exactly_36_query_targets(self):
 		import care_management.hooks as hooks
 
-		self.assertEqual(set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"})
+		self.assertEqual(
+			set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"}
+		)
 		self.assertEqual(len(hooks.permission_query_conditions), 36)
 
 	def test_hooks_register_exactly_36_document_targets(self):
@@ -204,7 +207,9 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 	def test_no_child_table_permission_hooks_are_registered(self):
 		import care_management.hooks as hooks
 
-		self.assertFalse(set(hooks.permission_query_conditions).intersection(permissions.CHILD_PARTICIPANT_PARENTFIELDS))
+		self.assertFalse(
+			set(hooks.permission_query_conditions).intersection(permissions.CHILD_PARTICIPANT_PARENTFIELDS)
+		)
 		self.assertFalse(set(hooks.has_permission).intersection(permissions.CHILD_PARTICIPANT_PARENTFIELDS))
 
 	def test_docshare_guard_is_registered(self):
@@ -411,8 +416,12 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 				"effective_from": frappe.utils.today(),
 			}
 		).insert(ignore_permissions=True)
-		frappe.db.set_value("Medication Administration Log", plan_a.name, "plan_status", "Active", update_modified=False)
-		frappe.db.set_value("Medication Administration Log", plan_b.name, "plan_status", "Active", update_modified=False)
+		frappe.db.set_value(
+			"Medication Administration Log", plan_a.name, "plan_status", "Active", update_modified=False
+		)
+		frappe.db.set_value(
+			"Medication Administration Log", plan_b.name, "plan_status", "Active", update_modified=False
+		)
 		task_doc = frappe.get_doc("Support Task", self.task_a)
 		task_doc.source_doctype = "Medication Administration Log"
 		task_doc.source_docname = plan_a.name
@@ -486,8 +495,12 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 				"effective_from": frappe.utils.today(),
 			}
 		).insert(ignore_permissions=True)
-		frappe.db.set_value("Medication Administration Log", plan_a.name, "plan_status", "Active", update_modified=False)
-		frappe.db.set_value("Medication Administration Log", plan_b.name, "plan_status", "Active", update_modified=False)
+		frappe.db.set_value(
+			"Medication Administration Log", plan_a.name, "plan_status", "Active", update_modified=False
+		)
+		frappe.db.set_value(
+			"Medication Administration Log", plan_b.name, "plan_status", "Active", update_modified=False
+		)
 		frappe.set_user(self.care_manager)
 		rows = permissions.search_medication_prn_review_plans(
 			"Medication Administration Log",
@@ -601,23 +614,27 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			20,
 		)
 		self.assertEqual(
-			list(permissions.search_medication_log_participants(
-				"Participant Profile",
-				"R2C1 Participant R2C2",
-				"name",
-				"bad",
-				20,
-			)),
+			list(
+				permissions.search_medication_log_participants(
+					"Participant Profile",
+					"R2C1 Participant R2C2",
+					"name",
+					"bad",
+					20,
+				)
+			),
 			[],
 		)
 		self.assertEqual(
-			list(medication_administration_log.search_medication_log_participants(
-				"Participant Profile",
-				self.participant_b,
-				"name",
-				0,
-				20,
-			)),
+			list(
+				medication_administration_log.search_medication_log_participants(
+					"Participant Profile",
+					self.participant_b,
+					"name",
+					0,
+					20,
+				)
+			),
 			[],
 		)
 
@@ -656,7 +673,9 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 		)
 		worker_event = self.insert_prn_event_row(self.participant_a, self.worker, "MANAGER-WORKER")
 		other_worker_event = self.insert_prn_event_row(self.participant_a, self.other_worker, "MANAGER-OTHER")
-		cross_participant_event = self.insert_prn_event_row(self.participant_b, self.other_worker, "MANAGER-CROSS")
+		cross_participant_event = self.insert_prn_event_row(
+			self.participant_b, self.other_worker, "MANAGER-CROSS"
+		)
 		frappe.set_user(self.care_manager)
 		rows = permissions.search_medication_prn_review_events(
 			"Medication Administration Event",
@@ -1063,7 +1082,9 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 
 	def test_real_frappe_get_list_support_worker_has_no_standard_access(self):
 		frappe.set_user(self.worker)
-		self.assertRaises(frappe.PermissionError, frappe.get_list, "Participant Profile", fields=["name"], limit=50)
+		self.assertRaises(
+			frappe.PermissionError, frappe.get_list, "Participant Profile", fields=["name"], limit=50
+		)
 
 	def test_real_frappe_get_list_administrator_query_bypass_is_unrestricted(self):
 		frappe.set_user("Administrator")
@@ -1130,7 +1151,9 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			"get_user_participant_grants",
 			side_effect=AssertionError("unexpected grant lookup"),
 		):
-			self.assertEqual(getattr(permissions, method_name)(self.care_manager, doctype="Support Plan"), "1=0")
+			self.assertEqual(
+				getattr(permissions, method_name)(self.care_manager, doctype="Support Plan"), "1=0"
+			)
 
 	def test_document_hook_accepts_frappe_canonical_signature(self):
 		doc = frappe.get_doc("Participant Profile", self.participant_a)
@@ -1152,12 +1175,16 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 		self.assertNotIn(self.participant_b, condition)
 
 	def test_query_condition_for_support_plan_uses_participant_field(self):
-		condition = permissions.get_participant_permission_query_conditions("Support Plan", user=self.care_manager)
+		condition = permissions.get_participant_permission_query_conditions(
+			"Support Plan", user=self.care_manager
+		)
 		self.assertIn("`tabSupport Plan`.`participant`", condition)
 		self.assertIn(self.participant_a, condition)
 
 	def test_query_condition_for_support_task_uses_support_plan_join(self):
-		condition = permissions.get_participant_permission_query_conditions("Support Task", user=self.care_manager)
+		condition = permissions.get_participant_permission_query_conditions(
+			"Support Task", user=self.care_manager
+		)
 		self.assertIn("`tabSupport Plan`", condition)
 		self.assertIn("`tabSupport Task`.`support_plan`", condition)
 
@@ -1211,7 +1238,9 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 		)
 
 	def test_caller_filter_widening_is_denied_by_hook_condition(self):
-		condition = permissions.get_participant_permission_query_conditions("Support Plan", user=self.care_manager)
+		condition = permissions.get_participant_permission_query_conditions(
+			"Support Plan", user=self.care_manager
+		)
 		self.assertIn(self.participant_a, condition)
 		self.assertNotIn(self.participant_b, condition)
 
@@ -1385,6 +1414,36 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 	def test_unknown_doctype_query_avoids_database_calls(self):
 		with patch.object(frappe.db, "get_value", side_effect=AssertionError("unexpected get_value")):
 			self.assertEqual(
-				permissions.get_participant_permission_query_conditions("Unknown DocType", user=self.care_manager),
+				permissions.get_participant_permission_query_conditions(
+					"Unknown DocType", user=self.care_manager
+				),
 				"1=0",
 			)
+
+	def test_stable_identifier_resolution_preserves_participant_scope(self):
+		participant_a_id = frappe.db.get_value("Participant Profile", self.participant_a, "participant_id")
+		participant_b_id = frappe.db.get_value("Participant Profile", self.participant_b, "participant_id")
+		self.assertEqual(resolve_participant_id(participant_a_id, user=self.care_manager), self.participant_a)
+		self.assertIsNone(resolve_participant_id(participant_b_id, user=self.care_manager))
+
+	def test_audit_export_access_remains_scoped_to_the_resolved_participant(self):
+		participant_id = frappe.db.get_value("Participant Profile", self.participant_a, "participant_id")
+		resolved = resolve_participant_id(participant_id, user=self.care_manager)
+		self.assertEqual(resolved, self.participant_a)
+		self.assertTrue(can_export_medication_audit_bundle(resolved, user=self.care_manager))
+
+	def test_r3_protected_inventory_is_unchanged_by_stable_identifier(self):
+		self.assertEqual(permissions.PROTECTED_PARTICIPANT_DOCTYPES, EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
+		self.assertNotIn("participant_id", permissions.DIRECT_PARTICIPANT_FIELDS)
+
+	def test_stable_identifier_resolution_does_not_mutate_guarded_tables(self):
+		participant_id = frappe.db.get_value("Participant Profile", self.participant_a, "participant_id")
+		before = {
+			"Participant Profile": frappe.db.count("Participant Profile"),
+			"User Permission": frappe.db.count("User Permission"),
+			"DocShare": frappe.db.count("DocShare"),
+			"Custom DocPerm": frappe.db.count("Custom DocPerm"),
+		}
+		resolve_participant_id(participant_id, user=self.care_manager)
+		after = {doctype: frappe.db.count(doctype) for doctype in before}
+		self.assertEqual(after, before)
