@@ -133,10 +133,11 @@
   {
    "fieldname": "marital_status",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Marital status",
    "options": "Single\nMarried\nDe Facto\nDivorced\nWidowed\nSeparated",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "living_arrangements",
@@ -152,22 +153,26 @@
   {
    "fieldname": "religious_or_spiritual",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Religious or Spiritual",
    "options": "Yes\nNo",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "religion",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Religion",
    "options": "\nChristianity\nIslam\nHinduism\nBuddhism\nJudaism\nSikhism\nNo Religion\nOther",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "religious_or_cultural_needs",
    "fieldtype": "Small Text",
-   "label": "Religious or cultural needs"
+   "hidden": 1,
+   "label": "Religious or cultural needs",
+   "read_only": 1
   },
   {
    "fieldname": "cb_about_3",
@@ -177,9 +182,10 @@
    "description": "Culturally and Linguistically Diverse",
    "fieldname": "cald",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "CALD",
    "options": "Yes\nNo",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cb_about_4",
@@ -189,9 +195,10 @@
    "description": "Aboriginal and/or Torres Strait Islander status \u2014 standard ABS category list",
    "fieldname": "atsi",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "ATSI",
    "options": "Aboriginal\nTorres Strait Islander\nBoth Aboriginal and Torres Strait Islander\nNeither\nNot Stated",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -299,9 +306,10 @@
   {
    "fieldname": "interpreter_required",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Interpreter Required",
    "options": "Yes\nNo",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cb_comm_1",
@@ -310,16 +318,18 @@
   {
    "fieldname": "english_ability",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "English Ability",
    "options": "Native\nFluent\nConversational\nBasic\nNone",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "depends_on": "eval:doc.interpreter_required=='Yes'",
    "fieldname": "interpreter_language_required",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Interpreter Language Required Specify",
-   "mandatory_depends_on": "eval:doc.interpreter_required=='Yes'"
+   "read_only": 1
   },
   {
    "fieldname": "cb_comm_2",
@@ -451,9 +461,10 @@
   {
    "fieldname": "receive_mobility_allowance",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Receive Mobility Allowance",
    "options": "Yes\nNo",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_1",
@@ -463,8 +474,9 @@
    "description": "10-11 digit Australian Medicare number",
    "fieldname": "medicare_number",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Medicare Number",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "mygov_account",
@@ -479,13 +491,16 @@
    "description": "Centrelink Reference Number",
    "fieldname": "crn_number",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "CRN Number",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "veteran_affairs_details",
    "fieldtype": "Data",
-   "label": "Veteran Affairs Details"
+   "hidden": 1,
+   "label": "Veteran Affairs Details",
+   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_3",
@@ -507,9 +522,10 @@
   {
    "fieldname": "companion_card",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Companion Card",
    "options": "Yes\nNo",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_4",
@@ -549,7 +565,9 @@
   {
    "fieldname": "my_aged_care_number",
    "fieldtype": "Data",
-   "label": "My Aged Care Number"
+   "hidden": 1,
+   "label": "My Aged Care Number",
+   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_5",

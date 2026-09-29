@@ -14,6 +14,7 @@ from care_management.care_management.tests.helpers import (
 	ensure_r2c1_task_assignment,
 	ensure_r2c1_user,
 	ensure_r2c1_user_permission,
+	make_r4_sensitive_identity,
 )
 
 EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
@@ -40,6 +41,7 @@ EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 		"Mood Tracker",
 		"Participant Drug Count",
 		"Participant Profile",
+		"Participant Sensitive Identity",
 		"Seizure Chart",
 		"Shift Handover Item",
 		"Shift Medication Check",
@@ -184,19 +186,19 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			)
 		self.assertEqual({row.name for row in rows}, {names[0]})
 
-	def test_hooks_register_exactly_36_query_targets(self):
+	def test_hooks_register_exactly_37_query_targets(self):
 		import care_management.hooks as hooks
 
 		self.assertEqual(
 			set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"}
 		)
-		self.assertEqual(len(hooks.permission_query_conditions), 36)
+		self.assertEqual(len(hooks.permission_query_conditions), 37)
 
-	def test_hooks_register_exactly_36_document_targets(self):
+	def test_hooks_register_exactly_37_document_targets(self):
 		import care_management.hooks as hooks
 
 		self.assertEqual(set(hooks.has_permission), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"})
-		self.assertEqual(len(hooks.has_permission), 36)
+		self.assertEqual(len(hooks.has_permission), 37)
 
 	def test_no_wildcard_permission_hooks_are_registered(self):
 		import care_management.hooks as hooks
@@ -227,7 +229,7 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 
 	def test_protected_doctype_inventory_is_exact(self):
 		self.assertEqual(permissions.PROTECTED_PARTICIPANT_DOCTYPES, EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 35)
+		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 36)
 		self.assertIn("Medication Administration Event", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 		self.assertIn("Medication Event Addendum", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 		self.assertNotIn("Medication Competency", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
@@ -1447,3 +1449,41 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 		resolve_participant_id(participant_id, user=self.care_manager)
 		after = {doctype: frappe.db.count(doctype) for doctype in before}
 		self.assertEqual(after, before)
+
+	def test_sensitive_identity_is_registered_in_both_hook_maps(self):
+		self.assertIn(
+			"Participant Sensitive Identity", permissions.PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS
+		)
+		self.assertIn("Participant Sensitive Identity", permissions.PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)
+
+	def test_sensitive_identity_query_is_scoped_to_applicable_grant(self):
+		ensure_r2c1_user_permission(
+			self.care_manager,
+			self.participant_a,
+			applicable_for="Participant Sensitive Identity",
+		)
+		condition = permissions.get_participant_permission_query_conditions(
+			"Participant Sensitive Identity", user=self.care_manager
+		)
+		self.assertIn("`participant`", condition)
+		self.assertIn(self.participant_a, condition)
+
+	def test_sensitive_identity_cross_participant_document_is_denied(self):
+		doc = make_r4_sensitive_identity(self.participant_b)
+		self.assertFalse(
+			permissions.has_participant_document_permission(doc, "create", user=self.care_manager)
+		)
+
+	def test_sensitive_identity_support_worker_is_denied(self):
+		doc = make_r4_sensitive_identity(self.participant_a)
+		self.assertFalse(permissions.has_participant_document_permission(doc, "read", user=self.worker))
+
+	def test_sensitive_identity_is_not_resolved_by_identifier_field(self):
+		self.assertEqual(
+			permissions.DIRECT_PARTICIPANT_FIELDS["Participant Sensitive Identity"],
+			"participant",
+		)
+		self.assertNotEqual(
+			permissions.DIRECT_PARTICIPANT_FIELDS["Participant Sensitive Identity"],
+			"participant_id",
+		)

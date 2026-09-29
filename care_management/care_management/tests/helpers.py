@@ -276,6 +276,26 @@ def make_r4_participant(suffix, participant_id=None):
 	)
 
 
+def make_r4_sensitive_identity(participant, **overrides):
+	values = {
+		"doctype": "Participant Sensitive Identity",
+		"participant": participant,
+		"marital_status": "Single",
+		"religious_or_spiritual": "No",
+		"religion": "No Religion",
+		"cald": "No",
+		"atsi": "Neither",
+		"interpreter_required": "No",
+		"english_ability": "Fluent",
+		"receive_mobility_allowance": "No",
+		"medicare_number": "4234567890",
+		"crn_number": "R4-SENSITIVE-CRN",
+		"companion_card": "No",
+	}
+	values.update(overrides)
+	return frappe.get_doc(values)
+
+
 def ensure_r2c1_user(suffix, roles):
 	email = make_r2c1_test_user_email(suffix)
 	if frappe.db.exists("User", email):

@@ -44,6 +44,7 @@ DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 		"Controlled Medication Transaction": "participant",
 		"Mood Tracker": "participant",
 		"Participant Drug Count": "participant",
+		"Participant Sensitive Identity": "participant",
 		"Seizure Chart": "participant",
 		"Shift Handover Item": "participant",
 		"Shift Medication Check": "participant",
@@ -659,6 +660,11 @@ def validate_retained_evidence_attachments(doc, method=None):
 
 def _validate_private_evidence_attachment(doc, target):
 	doctype, name = target
+	if doctype == "Participant Sensitive Identity" and name:
+		frappe.throw(
+			"Participant Sensitive Identity does not accept attachments.",
+			frappe.ValidationError,
+		)
 	if doctype not in RETAINED_EVIDENCE_DOCTYPES or not name:
 		return
 	if not int(getattr(doc, "is_private", 0) or 0):
