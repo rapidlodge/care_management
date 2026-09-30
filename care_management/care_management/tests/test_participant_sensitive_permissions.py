@@ -1,7 +1,12 @@
 import frappe
+from frappe.core.doctype.data_export.exporter import DataExporter
+from frappe.desk import reportview
 from frappe.tests import IntegrationTestCase
 
 from care_management.care_management import permissions
+from care_management.care_management.doctype.participant_profile.participant_profile import (
+	ParticipantProfile,
+)
 from care_management.care_management.participant_identity import resolve_participant_id
 from care_management.care_management.tests.helpers import (
 	ensure_r2c1_user,
@@ -23,12 +28,18 @@ class TestParticipantSensitivePermissions(IntegrationTestCase):
 		self.manager = ensure_r2c1_user(f"R4 Sensitive Manager {run}", ["Care Manager"])
 		self.coordinator = ensure_r2c1_user(f"R4 Sensitive Coordinator {run}", ["Support Coordinator"])
 		self.worker = ensure_r2c1_user(f"R4 Sensitive Worker {run}", ["Support Worker"])
+		self.profile_reader = ensure_r2c1_user(f"R4 Profile Reader {run}", ["Support Coordinator"])
 		for user in (self.manager, self.coordinator, self.worker):
 			ensure_r2c1_user_permission(
 				user,
 				self.participant_a.name,
 				applicable_for="Participant Sensitive Identity",
 			)
+		ensure_r2c1_user_permission(
+			self.profile_reader,
+			self.participant_a.name,
+			applicable_for="Participant Profile",
+		)
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
@@ -141,3 +152,88 @@ class TestParticipantSensitivePermissions(IntegrationTestCase):
 		self.assertFalse(meta.allow_import)
 		care_manager_permission = next(row for row in meta.permissions if row.role == "Care Manager")
 		self.assertFalse(care_manager_permission.get("export"))
+
+	def test_15_participant_profile_serialization_excludes_legacy_fields(self):
+		from frappe.client import get as client_get
+
+		frappe.set_user(self.profile_reader)
+		result = client_get("Participant Profile", self.participant_a.name)
+		self.assertTrue(
+			permissions.has_participant_document_permission(
+				self.participant_a, "read", user=self.profile_reader
+			)
+		)
+		self.assertFalse(ParticipantProfile.PROTECTED_SOURCE_FIELDS.intersection(result))
+
+	def test_16_profile_api_and_query_reject_legacy_field_selection(self):
+		from frappe.client import get_list, get_value
+
+		frappe.set_user(self.profile_reader)
+		with self.assertRaises(frappe.ValidationError):
+			get_value(
+				"Participant Profile",
+				"medicare_number",
+				filters={"name": self.participant_a.name},
+			)
+		with self.assertRaises(frappe.ValidationError):
+			get_list(
+				"Participant Profile",
+				fields=["name", "medicare_number"],
+				filters={"name": self.participant_a.name},
+			)
+
+	def test_17_reportview_enforces_legacy_and_protected_boundaries(self):
+		frappe.set_user(self.profile_reader)
+		frappe.local.request = frappe._dict(method="POST")
+		frappe.local.form_dict = frappe._dict(
+			{
+				"doctype": "Participant Profile",
+				"fields": ["name", "medicare_number"],
+				"view": "Report",
+			}
+		)
+		with self.assertRaises(frappe.ValidationError):
+			reportview.get()
+
+		frappe.set_user(self.coordinator)
+		frappe.local.form_dict = frappe._dict(
+			{
+				"doctype": "Participant Sensitive Identity",
+				"fields": ["name", "participant", "medicare_number"],
+				"view": "Report",
+			}
+		)
+		result = reportview.get()
+		self.assertEqual(result["keys"], ["name", "participant", "medicare_number"])
+		self.assertEqual(len(result["values"]), 1)
+
+	def test_18_actual_export_denies_profile_reader(self):
+		frappe.set_user(self.profile_reader)
+		exporter = DataExporter(
+			doctype="Participant Profile",
+			with_data=True,
+			select_columns={"Participant Profile": ["name", "participant"]},
+			file_type="CSV",
+		)
+		with self.assertRaises(frappe.PermissionError):
+			exporter.build_response()
+
+	def test_19_authorized_export_cannot_select_legacy_profile_fields(self):
+		frappe.set_user("Administrator")
+		profile_export = DataExporter(
+			doctype="Participant Profile",
+			with_data=True,
+			select_columns={"Participant Profile": ["name", "medicare_number"]},
+			file_type="CSV",
+		)
+		profile_export.build_response()
+		self.assertNotIn("medicare_number", frappe.response["result"])
+
+		protected_export = DataExporter(
+			doctype="Participant Sensitive Identity",
+			with_data=True,
+			select_columns={"Participant Sensitive Identity": ["name", "medicare_number"]},
+			file_type="CSV",
+		)
+		protected_export.build_response()
+		self.assertIn("medicare_number", frappe.response["result"])

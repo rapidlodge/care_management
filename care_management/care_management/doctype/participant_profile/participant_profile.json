@@ -10,16 +10,10 @@
   "sb_about_participant",
   "legally_competent",
   "cb_about_1",
-  "marital_status",
   "living_arrangements",
   "cb_about_2",
-  "religious_or_spiritual",
-  "religion",
-  "religious_or_cultural_needs",
   "cb_about_3",
-  "cald",
   "cb_about_4",
-  "atsi",
   "sb_legal_consent",
   "consent_received",
   "organ_cadaver_donor",
@@ -41,10 +35,7 @@
   "information_about_risk_or_alert",
   "last_medication_review_date",
   "sb_comm_supports",
-  "interpreter_required",
   "cb_comm_1",
-  "english_ability",
-  "interpreter_language_required",
   "cb_comm_2",
   "communication_supports_required",
   "communication_type",
@@ -67,24 +58,18 @@
   "cb_medical_5",
   "bsp_plan_review_date",
   "sb_agencies_refs",
-  "receive_mobility_allowance",
   "cb_agencies_1",
-  "medicare_number",
   "mygov_account",
   "cb_agencies_2",
-  "crn_number",
-  "veteran_affairs_details",
   "cb_agencies_3",
   "private_health_care_cover",
   "health_care_cover_details",
-  "companion_card",
   "cb_agencies_4",
   "funding_type",
   "ndia_funding_type",
   "plan_managed_details",
   "support_agency",
   "support_agency_further_details",
-  "my_aged_care_number",
   "cb_agencies_5",
   "pharmacist_name",
   "pharmacist_contact_number"
@@ -131,15 +116,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "marital_status",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_list_view": 1,
-   "label": "Marital status",
-   "options": "Single\nMarried\nDe Facto\nDivorced\nWidowed\nSeparated",
-   "read_only": 1
-  },
-  {
    "fieldname": "living_arrangements",
    "fieldtype": "Table MultiSelect",
    "label": "Living arrangements",
@@ -151,54 +127,12 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "religious_or_spiritual",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_list_view": 1,
-   "label": "Religious or Spiritual",
-   "options": "Yes\nNo",
-   "read_only": 1
-  },
-  {
-   "fieldname": "religion",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Religion",
-   "options": "\nChristianity\nIslam\nHinduism\nBuddhism\nJudaism\nSikhism\nNo Religion\nOther",
-   "read_only": 1
-  },
-  {
-   "fieldname": "religious_or_cultural_needs",
-   "fieldtype": "Small Text",
-   "hidden": 1,
-   "label": "Religious or cultural needs",
-   "read_only": 1
-  },
-  {
    "fieldname": "cb_about_3",
    "fieldtype": "Column Break"
   },
   {
-   "description": "Culturally and Linguistically Diverse",
-   "fieldname": "cald",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "CALD",
-   "options": "Yes\nNo",
-   "read_only": 1
-  },
-  {
    "fieldname": "cb_about_4",
    "fieldtype": "Column Break"
-  },
-  {
-   "description": "Aboriginal and/or Torres Strait Islander status \u2014 standard ABS category list",
-   "fieldname": "atsi",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "ATSI",
-   "options": "Aboriginal\nTorres Strait Islander\nBoth Aboriginal and Torres Strait Islander\nNeither\nNot Stated",
-   "read_only": 1
   },
   {
    "collapsible": 1,
@@ -304,32 +238,8 @@
    "label": "Communication Supports"
   },
   {
-   "fieldname": "interpreter_required",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Interpreter Required",
-   "options": "Yes\nNo",
-   "read_only": 1
-  },
-  {
    "fieldname": "cb_comm_1",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "english_ability",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "English Ability",
-   "options": "Native\nFluent\nConversational\nBasic\nNone",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.interpreter_required=='Yes'",
-   "fieldname": "interpreter_language_required",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Interpreter Language Required Specify",
-   "read_only": 1
   },
   {
    "fieldname": "cb_comm_2",
@@ -459,24 +369,8 @@
    "label": "Agencies and Reference Numbers"
   },
   {
-   "fieldname": "receive_mobility_allowance",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Receive Mobility Allowance",
-   "options": "Yes\nNo",
-   "read_only": 1
-  },
-  {
    "fieldname": "cb_agencies_1",
    "fieldtype": "Column Break"
-  },
-  {
-   "description": "10-11 digit Australian Medicare number",
-   "fieldname": "medicare_number",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Medicare Number",
-   "read_only": 1
   },
   {
    "fieldname": "mygov_account",
@@ -486,21 +380,6 @@
   {
    "fieldname": "cb_agencies_2",
    "fieldtype": "Column Break"
-  },
-  {
-   "description": "Centrelink Reference Number",
-   "fieldname": "crn_number",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "CRN Number",
-   "read_only": 1
-  },
-  {
-   "fieldname": "veteran_affairs_details",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Veteran Affairs Details",
-   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_3",
@@ -518,14 +397,6 @@
    "fieldname": "health_care_cover_details",
    "fieldtype": "Text",
    "label": "Health Care Cover Details"
-  },
-  {
-   "fieldname": "companion_card",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Companion Card",
-   "options": "Yes\nNo",
-   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_4",
@@ -561,13 +432,6 @@
    "fieldname": "support_agency_further_details",
    "fieldtype": "Text",
    "label": "Support Agency Further Details"
-  },
-  {
-   "fieldname": "my_aged_care_number",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "My Aged Care Number",
-   "read_only": 1
   },
   {
    "fieldname": "cb_agencies_5",

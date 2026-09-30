@@ -60,15 +60,18 @@ class ParticipantProfile(Document):
 		"""Keep migrated columns as immutable rollback evidence until later removal."""
 		if self.is_new():
 			return
+		attempted_fields = self.PROTECTED_SOURCE_FIELDS.intersection(self.__dict__)
+		if not attempted_fields:
+			return
 		persisted = frappe.db.get_value(
 			"Participant Profile",
 			self.name,
-			sorted(self.PROTECTED_SOURCE_FIELDS),
+			sorted(attempted_fields),
 			as_dict=True,
 		)
 		if not persisted:
 			frappe.throw(_("Participant Profile no longer exists."))
-		for fieldname in self.PROTECTED_SOURCE_FIELDS:
+		for fieldname in attempted_fields:
 			if str(self.get(fieldname) or "") != str(persisted.get(fieldname) or ""):
 				frappe.throw(
 					_("Protected participant details must be updated on Participant Sensitive Identity."),

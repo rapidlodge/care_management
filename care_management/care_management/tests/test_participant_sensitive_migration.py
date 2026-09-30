@@ -17,12 +17,15 @@ class TestParticipantSensitiveMigration(IntegrationTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.set_user("Administrator")
+		self.commit_patcher = patch.object(migration, "_commit_batch")
+		self.commit_batch = self.commit_patcher.start()
 		self.participant = make_r4_participant(frappe.generate_hash(length=8)).insert(ignore_permissions=True)
 		self._set_source_values(self.participant.name)
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
 		frappe.db.rollback()
+		self.commit_patcher.stop()
 		super().tearDown()
 
 	def _set_source_values(self, participant):
@@ -160,5 +163,69 @@ class TestParticipantSensitiveMigration(IntegrationTestCase):
 
 		with patch.object(migration.frappe, "get_doc", side_effect=fail_second_target):
 			self.assertRaises(frappe.ValidationError, migration.migrate_participant_sensitive_identity)
-		self.assertFalse(self._target(self.participant.name))
-		self.assertFalse(self._target(other.name))
+			self.assertFalse(self._target(self.participant.name))
+			self.assertFalse(self._target(other.name))
+
+	def test_15_migration_uses_fixed_bounded_batches(self):
+		other = make_r4_participant(frappe.generate_hash(length=8)).insert(ignore_permissions=True)
+		self._set_source_values(other.name)
+		batch_sizes = []
+		real_source_batch = migration._source_batch
+
+		def track_source_batch(after_name=""):
+			result = real_source_batch(after_name)
+			batch_sizes.append(len(result))
+			return result
+
+		with (
+			patch.object(migration, "BATCH_SIZE", 1),
+			patch.object(migration, "_source_batch", side_effect=track_source_batch),
+		):
+			migration.migrate_participant_sensitive_identity()
+		self.assertTrue(batch_sizes)
+		self.assertTrue(all(size <= 1 for size in batch_sizes))
+		self.assertGreaterEqual(self.commit_batch.call_count, 2)
+
+	def test_16_committed_target_is_durable_restart_marker(self):
+		other = make_r4_participant(frappe.generate_hash(length=8)).insert(ignore_permissions=True)
+		self._set_source_values(other.name)
+		real_migrate = migration._migrate_locked_row
+		created = []
+
+		def interrupt_after_completed_batch(row):
+			if created:
+				raise frappe.ValidationError("synthetic interruption")
+			result = real_migrate(row)
+			if result:
+				created.append(row.name)
+			return result
+
+		with (
+			patch.object(migration, "BATCH_SIZE", 1),
+			patch.object(migration, "_migrate_locked_row", side_effect=interrupt_after_completed_batch),
+		):
+			self.assertRaises(frappe.ValidationError, migration.migrate_participant_sensitive_identity)
+		self.assertEqual(len(created), 1)
+		self.assertTrue(self._target(created[0]))
+		with patch.object(migration, "BATCH_SIZE", 1):
+			migration.migrate_participant_sensitive_identity()
+		self.assertTrue(self._target(self.participant.name))
+		self.assertTrue(self._target(other.name))
+		self.assertEqual(migration.migrate_participant_sensitive_identity(), 0)
+
+	def test_17_post_lock_recheck_rejects_changed_eligibility(self):
+		real_locked_source_row = migration._locked_source_row
+
+		def invalidate_after_selection(participant):
+			row = real_locked_source_row(participant)
+			if row and participant == self.participant.name:
+				row.participant_id = "invalid-after-selection"
+			return row
+
+		with patch.object(
+			migration,
+			"_locked_source_row",
+			side_effect=invalidate_after_selection,
+		):
+			self.assertRaises(frappe.ValidationError, migration.migrate_participant_sensitive_identity)
+		self.assertFalse(self._target())
