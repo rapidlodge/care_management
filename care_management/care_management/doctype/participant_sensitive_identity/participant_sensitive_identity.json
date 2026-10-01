@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-28 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "participant",
+  "demographics_section",
+  "marital_status",
+  "religious_or_spiritual",
+  "religion",
+  "religious_or_cultural_needs",
+  "demographics_column",
+  "cald",
+  "atsi",
+  "interpreter_required",
+  "english_ability",
+  "interpreter_language_required",
+  "identifiers_section",
+  "receive_mobility_allowance",
+  "medicare_number",
+  "crn_number",
+  "identifiers_column",
+  "veteran_affairs_details",
+  "companion_card",
+  "my_aged_care_number"
+ ],
+ "fields": [
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Participant",
+   "no_copy": 1,
+   "options": "Participant Profile",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "demographics_section",
+   "fieldtype": "Section Break",
+   "label": "Protected Demographic Details"
+  },
+  {
+   "fieldname": "marital_status",
+   "fieldtype": "Select",
+   "label": "Marital Status",
+   "options": "Single\nMarried\nDe Facto\nDivorced\nWidowed\nSeparated"
+  },
+  {
+   "fieldname": "religious_or_spiritual",
+   "fieldtype": "Select",
+   "label": "Religious or Spiritual",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "religion",
+   "fieldtype": "Select",
+   "label": "Religion",
+   "options": "\nChristianity\nIslam\nHinduism\nBuddhism\nJudaism\nSikhism\nNo Religion\nOther"
+  },
+  {
+   "fieldname": "religious_or_cultural_needs",
+   "fieldtype": "Small Text",
+   "label": "Religious or Cultural Needs"
+  },
+  {
+   "fieldname": "demographics_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cald",
+   "fieldtype": "Select",
+   "label": "CALD",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "atsi",
+   "fieldtype": "Select",
+   "label": "ATSI",
+   "options": "Aboriginal\nTorres Strait Islander\nBoth Aboriginal and Torres Strait Islander\nNeither\nNot Stated"
+  },
+  {
+   "fieldname": "interpreter_required",
+   "fieldtype": "Select",
+   "label": "Interpreter Required",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "english_ability",
+   "fieldtype": "Select",
+   "label": "English Ability",
+   "options": "Native\nFluent\nConversational\nBasic\nNone"
+  },
+  {
+   "depends_on": "eval:doc.interpreter_required == 'Yes'",
+   "fieldname": "interpreter_language_required",
+   "fieldtype": "Data",
+   "label": "Interpreter Language Required"
+  },
+  {
+   "fieldname": "identifiers_section",
+   "fieldtype": "Section Break",
+   "label": "Government and Program References"
+  },
+  {
+   "fieldname": "receive_mobility_allowance",
+   "fieldtype": "Select",
+   "label": "Receive Mobility Allowance",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "medicare_number",
+   "fieldtype": "Data",
+   "label": "Medicare Number"
+  },
+  {
+   "fieldname": "crn_number",
+   "fieldtype": "Data",
+   "label": "CRN Number"
+  },
+  {
+   "fieldname": "identifiers_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "veteran_affairs_details",
+   "fieldtype": "Data",
+   "label": "Veteran Affairs Details"
+  },
+  {
+   "fieldname": "companion_card",
+   "fieldtype": "Select",
+   "label": "Companion Card",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "my_aged_care_number",
+   "fieldtype": "Data",
+   "label": "My Aged Care Number"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Care Management",
+ "name": "Participant Sensitive Identity",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Care Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Support Coordinator"
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "participant",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "participant",
+ "track_changes": 1
+}

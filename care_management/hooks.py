@@ -141,7 +141,8 @@ from care_management.care_management.permissions import (
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
-# R3C.2 medication safeguard DocTypes are included through the participant hook maps.
+# Participant-scoped records, including Participant Sensitive Identity, are
+# included through the centrally generated hook maps.
 permission_query_conditions = dict(PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS)
 permission_query_conditions["File"] = (
 	"care_management.care_management.permissions.get_evidence_file_permission_query_conditions"
@@ -319,6 +320,4 @@ for evidence_doctype in RETAINED_EVIDENCE_DOCTYPES:
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
-fixtures = [
-    {"dt": "Task Template"}
-]
+fixtures = [{"dt": "Task Template"}]

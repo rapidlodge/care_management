@@ -13,6 +13,7 @@ from care_management.care_management.tests.helpers import (
 	ensure_r2c1_user,
 	ensure_r2c1_user_permission,
 	make_r4_participant,
+	make_r4_sensitive_identity,
 )
 from care_management.patches.v1_0 import backfill_participant_ids
 
@@ -222,3 +223,19 @@ class TestParticipantIdentity(IntegrationTestCase):
 		backfill_participant_ids._backfill_participant_ids()
 		self.assertEqual(doc.name, original_name)
 		self.assertEqual(frappe.db.get_value("Support Plan", plan, "participant"), original_name)
+
+	def test_new_profile_discards_deprecated_protected_source_values(self):
+		doc = make_r4_participant("Protected Source Discard").insert(ignore_permissions=True)
+		for fieldname in ("medicare_number", "crn_number", "marital_status"):
+			self.assertFalse(frappe.db.get_value("Participant Profile", doc.name, fieldname))
+
+	def test_existing_profile_rejects_deprecated_protected_source_write(self):
+		doc = make_r4_participant("Protected Source Immutable").insert(ignore_permissions=True)
+		doc.medicare_number = "6234567890"
+		self.assertRaises(frappe.PermissionError, doc.save, ignore_permissions=True)
+
+	def test_stable_identifier_does_not_resolve_protected_record(self):
+		doc = make_r4_participant("Protected Resolution").insert(ignore_permissions=True)
+		protected = make_r4_sensitive_identity(doc.name).insert(ignore_permissions=True)
+		self.assertEqual(resolve_participant_id(doc.participant_id, user="Administrator"), doc.name)
+		self.assertNotEqual(protected.name, doc.participant_id)

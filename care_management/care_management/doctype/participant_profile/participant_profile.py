@@ -1,8 +1,6 @@
 # Copyright (c) 2026, Hexflow Australia and contributors
 # For license information, please see license.txt
 
-import re
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -14,14 +12,35 @@ from care_management.care_management.participant_identity import (
 
 
 class ParticipantProfile(Document):
+	PROTECTED_SOURCE_FIELDS = frozenset(
+		{
+			"marital_status",
+			"religious_or_spiritual",
+			"religion",
+			"religious_or_cultural_needs",
+			"cald",
+			"atsi",
+			"interpreter_required",
+			"english_ability",
+			"interpreter_language_required",
+			"receive_mobility_allowance",
+			"medicare_number",
+			"crn_number",
+			"veteran_affairs_details",
+			"companion_card",
+			"my_aged_care_number",
+		}
+	)
+
 	def before_insert(self):
 		if self.participant_id:
 			frappe.throw(_("Participant ID is assigned by the server."))
 		self.participant_id = generate_participant_id()
+		self._discard_deprecated_protected_values()
 
 	def validate(self):
 		self.validate_participant_id()
-		self.validate_medicare_number()
+		self.validate_deprecated_protected_fields()
 		self.validate_conditional_mandatory_fields()
 
 	def validate_participant_id(self):
@@ -33,14 +52,30 @@ class ParticipantProfile(Document):
 		if persisted != self.participant_id:
 			frappe.throw(_("Participant ID cannot be changed after assignment."))
 
-	def validate_medicare_number(self):
-		"""Australian Medicare numbers are 10 or 11 digits."""
-		if self.medicare_number:
-			cleaned = re.sub(r"\s+", "", self.medicare_number)
-			if not re.match(r"^\d{10,11}$", cleaned):
+	def _discard_deprecated_protected_values(self):
+		for fieldname in self.PROTECTED_SOURCE_FIELDS:
+			self.set(fieldname, None)
+
+	def validate_deprecated_protected_fields(self):
+		"""Keep migrated columns as immutable rollback evidence until later removal."""
+		if self.is_new():
+			return
+		attempted_fields = self.PROTECTED_SOURCE_FIELDS.intersection(self.__dict__)
+		if not attempted_fields:
+			return
+		persisted = frappe.db.get_value(
+			"Participant Profile",
+			self.name,
+			sorted(attempted_fields),
+			as_dict=True,
+		)
+		if not persisted:
+			frappe.throw(_("Participant Profile no longer exists."))
+		for fieldname in attempted_fields:
+			if str(self.get(fieldname) or "") != str(persisted.get(fieldname) or ""):
 				frappe.throw(
-					_("Medicare Number must be 10 or 11 digits."),
-					title=_("Invalid Medicare Number"),
+					_("Protected participant details must be updated on Participant Sensitive Identity."),
+					frappe.PermissionError,
 				)
 
 	def validate_conditional_mandatory_fields(self):
@@ -51,11 +86,6 @@ class ParticipantProfile(Document):
 		"""
 		checks = [
 			(self.risk_or_alert_present == "Yes", "risk_or_alert", _("Risk or Alert")),
-			(
-				self.interpreter_required == "Yes",
-				"interpreter_language_required",
-				_("Interpreter Language Required Specify"),
-			),
 			(self.end_of_life_plan == "Yes", "date_of_last_elp_meeting", _("Date of last ELP meeting")),
 			(self.bsp_plan == "Yes", "bsp_plan_review_date", _("BSP Plan Review Date")),
 		]
