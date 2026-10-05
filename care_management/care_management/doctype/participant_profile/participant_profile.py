@@ -9,6 +9,7 @@ from care_management.care_management.participant_identity import (
 	generate_participant_id,
 	is_valid_participant_id,
 )
+from care_management.care_management.prohibited_storage import reject_prohibited_mygov_storage
 
 
 class ParticipantProfile(Document):
@@ -33,12 +34,14 @@ class ParticipantProfile(Document):
 	)
 
 	def before_insert(self):
+		reject_prohibited_mygov_storage(self)
 		if self.participant_id:
 			frappe.throw(_("Participant ID is assigned by the server."))
 		self.participant_id = generate_participant_id()
 		self._discard_deprecated_protected_values()
 
 	def validate(self):
+		reject_prohibited_mygov_storage(self)
 		self.validate_participant_id()
 		self.validate_deprecated_protected_fields()
 		self.validate_conditional_mandatory_fields()
