@@ -12,6 +12,10 @@ from care_management.care_management.permissions import (
 	has_evidence_file_permission,
 )
 
+PROHIBITED_STORAGE_METADATA_VALIDATOR = (
+	"care_management.care_management.prohibited_storage.validate_prohibited_storage_metadata"
+)
+
 # Apps
 # ------------------
 
@@ -158,6 +162,12 @@ write_file = "care_management.care_management.permissions.write_file_with_retain
 # Hook on document methods and events
 
 doc_events = {
+	"Custom Field": {
+		"validate": PROHIBITED_STORAGE_METADATA_VALIDATOR,
+	},
+	"Property Setter": {
+		"validate": PROHIBITED_STORAGE_METADATA_VALIDATOR,
+	},
 	"File": {
 		"before_validate": "care_management.care_management.permissions.validate_evidence_file_retention",
 		"validate": "care_management.care_management.permissions.validate_evidence_file_retention",

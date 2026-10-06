@@ -59,7 +59,6 @@
   "bsp_plan_review_date",
   "sb_agencies_refs",
   "cb_agencies_1",
-  "mygov_account",
   "cb_agencies_2",
   "cb_agencies_3",
   "private_health_care_cover",
@@ -371,11 +370,6 @@
   {
    "fieldname": "cb_agencies_1",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "mygov_account",
-   "fieldtype": "Data",
-   "label": "MyGov Account"
   },
   {
    "fieldname": "cb_agencies_2",
