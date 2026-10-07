@@ -40,6 +40,9 @@ EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 		"Controlled Medication Transaction",
 		"Mood Tracker",
 		"Participant Drug Count",
+		"Participant Contact",
+		"Participant Health Alert",
+		"Participant Health Alert Acknowledgement",
 		"Participant Profile",
 		"Participant Sensitive Identity",
 		"Seizure Chart",
@@ -186,19 +189,19 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 			)
 		self.assertEqual({row.name for row in rows}, {names[0]})
 
-	def test_hooks_register_exactly_37_query_targets(self):
+	def test_hooks_register_exactly_40_query_targets(self):
 		import care_management.hooks as hooks
 
 		self.assertEqual(
 			set(hooks.permission_query_conditions), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"}
 		)
-		self.assertEqual(len(hooks.permission_query_conditions), 37)
+		self.assertEqual(len(hooks.permission_query_conditions), 40)
 
-	def test_hooks_register_exactly_37_document_targets(self):
+	def test_hooks_register_exactly_40_document_targets(self):
 		import care_management.hooks as hooks
 
 		self.assertEqual(set(hooks.has_permission), EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES | {"File"})
-		self.assertEqual(len(hooks.has_permission), 37)
+		self.assertEqual(len(hooks.has_permission), 40)
 
 	def test_no_wildcard_permission_hooks_are_registered(self):
 		import care_management.hooks as hooks
@@ -229,7 +232,7 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 
 	def test_protected_doctype_inventory_is_exact(self):
 		self.assertEqual(permissions.PROTECTED_PARTICIPANT_DOCTYPES, EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)
-		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 36)
+		self.assertEqual(len(permissions.PROTECTED_PARTICIPANT_DOCTYPES), 39)
 		self.assertIn("Medication Administration Event", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 		self.assertIn("Medication Event Addendum", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
 		self.assertNotIn("Medication Competency", permissions.PROTECTED_PARTICIPANT_DOCTYPES)
@@ -1433,6 +1436,16 @@ class TestParticipantPermissionHooks(IntegrationTestCase):
 		resolved = resolve_participant_id(participant_id, user=self.care_manager)
 		self.assertEqual(resolved, self.participant_a)
 		self.assertTrue(can_export_medication_audit_bundle(resolved, user=self.care_manager))
+
+
+	def test_contact_alert_hook_inventory_contains_exact_new_targets(self):
+		for doctype in (
+			"Participant Contact",
+			"Participant Health Alert",
+			"Participant Health Alert Acknowledgement",
+		):
+			self.assertIn(doctype, permissions.PARTICIPANT_PERMISSION_QUERY_CONDITION_HOOKS)
+			self.assertIn(doctype, permissions.PARTICIPANT_DOCUMENT_PERMISSION_HOOKS)
 
 	def test_r3_protected_inventory_is_unchanged_by_stable_identifier(self):
 		self.assertEqual(permissions.PROTECTED_PARTICIPANT_DOCTYPES, EXPECTED_PROTECTED_PARTICIPANT_DOCTYPES)

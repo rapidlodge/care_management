@@ -29,10 +29,6 @@
   "asthma_review_date",
   "ascia_review_date",
   "sb_risks_alerts",
-  "risk_or_alert_present",
-  "cb_risk_1",
-  "risk_or_alert",
-  "information_about_risk_or_alert",
   "last_medication_review_date",
   "sb_comm_supports",
   "cb_comm_1",
@@ -69,9 +65,7 @@
   "plan_managed_details",
   "support_agency",
   "support_agency_further_details",
-  "cb_agencies_5",
-  "pharmacist_name",
-  "pharmacist_contact_number"
+  "cb_agencies_5"
  ],
  "fields": [
   {
@@ -193,37 +187,12 @@
    "fieldtype": "Date",
    "label": "PEEP Review Date"
   },
-  {
+ {
    "collapsible": 1,
+   "description": "Legacy fields are retained as read-only migration evidence; use Participant Health Alert.",
    "fieldname": "sb_risks_alerts",
    "fieldtype": "Section Break",
    "label": "Risks and Alerts"
-  },
-  {
-   "fieldname": "risk_or_alert_present",
-   "fieldtype": "Select",
-   "label": "Risk or alert present",
-   "options": "Yes\nNo",
-   "reqd": 1
-  },
-  {
-   "fieldname": "cb_risk_1",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.risk_or_alert_present=='Yes'",
-   "fieldname": "risk_or_alert",
-   "fieldtype": "Select",
-   "label": "Risk or Alert",
-   "mandatory_depends_on": "eval:doc.risk_or_alert_present=='Yes'",
-   "options": "\nBehavioural\nMedical\nEnvironmental\nSafety\nSelf-Harm\nOther",
-   "reqd": 1
-  },
-  {
-   "depends_on": "eval:doc.risk_or_alert_present=='Yes'",
-   "fieldname": "information_about_risk_or_alert",
-   "fieldtype": "Text",
-   "label": "Information about risk or alert"
   },
   {
    "fieldname": "last_medication_review_date",
@@ -430,17 +399,6 @@
   {
    "fieldname": "cb_agencies_5",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "pharmacist_name",
-   "fieldtype": "Data",
-   "label": "Pharmacist Name",
-   "reqd": 1
-  },
-  {
-   "fieldname": "pharmacist_contact_number",
-   "fieldtype": "Data",
-   "label": "Pharmacist Contact Number"
   },
   {
    "description": "Asthma Management and First Aid Plan",

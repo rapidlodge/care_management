@@ -330,4 +330,12 @@ for evidence_doctype in RETAINED_EVIDENCE_DOCTYPES:
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
-fixtures = [{"dt": "Task Template"}]
+fixtures = [
+	{"dt": "Task Template"},
+	{"dt": "Role", "filters": [["name", "in", ["Clinical Lead", "Privacy Officer"]]]},
+]
+
+before_install = "care_management.patches.v1_0.migrate_participant_contacts_and_health_alerts.bootstrap_specialist_roles"
+before_migrate = "care_management.patches.v1_0.migrate_participant_contacts_and_health_alerts.bootstrap_specialist_roles"
+after_sync = "care_management.patches.v1_0.migrate_participant_contacts_and_health_alerts.run_guarded_migration"
+after_migrate = "care_management.patches.v1_0.migrate_participant_contacts_and_health_alerts.run_guarded_migration"

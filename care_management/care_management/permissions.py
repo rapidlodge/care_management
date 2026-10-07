@@ -12,6 +12,8 @@ SYSTEM_MANAGER_ROLE = "System Manager"
 CARE_MANAGER_ROLE = "Care Manager"
 SUPPORT_COORDINATOR_ROLE = "Support Coordinator"
 SUPPORT_WORKER_ROLE = "Support Worker"
+CLINICAL_LEAD_ROLE = "Clinical Lead"
+PRIVACY_OFFICER_ROLE = "Privacy Officer"
 
 CARE_MANAGER_ROLES = frozenset({SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE})
 CARE_COORDINATION_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
@@ -44,6 +46,9 @@ DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 		"Controlled Medication Transaction": "participant",
 		"Mood Tracker": "participant",
 		"Participant Drug Count": "participant",
+		"Participant Contact": "participant",
+		"Participant Health Alert": "participant",
+		"Participant Health Alert Acknowledgement": "participant",
 		"Participant Sensitive Identity": "participant",
 		"Seizure Chart": "participant",
 		"Shift Handover Item": "participant",
@@ -85,8 +90,14 @@ PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 )
 
 STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
+CONTACT_ALERT_READ_ROLES = frozenset(
+	{CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE, CLINICAL_LEAD_ROLE, PRIVACY_OFFICER_ROLE}
+)
 SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset(
 	{
+		"Participant Contact",
+		"Participant Health Alert",
+		"Participant Health Alert Acknowledgement",
 		"Medication Administration Event",
 		"Medication Event Addendum",
 		"Medication PRN Effectiveness Review",
@@ -462,6 +473,10 @@ def _is_participant_boundary_administrator(user):
 
 
 def _has_participant_document_role(doctype, user):
+	if doctype in {
+		"Participant Contact", "Participant Health Alert", "Participant Health Alert Acknowledgement"
+	} and has_any_role(CONTACT_ALERT_READ_ROLES, user=user):
+		return True
 	if has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=user):
 		return True
 	return doctype in SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES and has_any_role(
@@ -774,6 +789,14 @@ def _incident_requires_retention(name, doc=None):
 
 
 def _support_worker_document_permission_allowed(doctype, doc, permission_type, user):
+	if doctype == "Participant Contact":
+		return permission_type in {"read", "select"} and _field_value(doctype, doc, "status") == "Active"
+	if doctype == "Participant Health Alert":
+		return permission_type in {"read", "select"} and _field_value(doctype, doc, "status") == "Active"
+	if doctype == "Participant Health Alert Acknowledgement":
+		if permission_type == "create":
+			return True
+		return permission_type in {"read", "select"} and _field_value(doctype, doc, "acknowledged_by") == user
 	if doctype == "Medication Administration Event":
 		return permission_type in {"create", "read", "select", "write", "submit"}
 	if doctype == "Medication Event Addendum":
@@ -956,6 +979,12 @@ def get_participant_permission_query_conditions(doctype, user=None):
 def _support_worker_query_condition(doctype, user):
 	table = _sql_table(doctype)
 	escaped_user = _sql_value(user)
+	if doctype == "Participant Contact":
+		return f"{table}.`status` = 'Active'"
+	if doctype == "Participant Health Alert":
+		return f"{table}.`status` = 'Active'"
+	if doctype == "Participant Health Alert Acknowledgement":
+		return f"{table}.`acknowledged_by` = {escaped_user}"
 	if doctype == "Medication Administration Event":
 		return ""
 	if doctype == "Medication Event Addendum":

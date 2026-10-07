@@ -1,6 +1,8 @@
 import re
 
 import frappe
+
+R4_SPECIALIST_ROLES = ("Clinical Lead", "Privacy Officer")
 from frappe.utils import add_days, nowdate, today
 
 TEST_PARTICIPANT_NAME = "R1 Test Participant"

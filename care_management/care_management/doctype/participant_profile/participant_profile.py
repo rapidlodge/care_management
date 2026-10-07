@@ -32,6 +32,9 @@ class ParticipantProfile(Document):
 			"my_aged_care_number",
 		}
 	)
+	CONTACT_ALERT_SOURCE_FIELDS = frozenset(
+		{"pharmacist_name", "pharmacist_contact_number", "risk_or_alert_present", "risk_or_alert", "information_about_risk_or_alert"}
+	)
 
 	def before_insert(self):
 		reject_prohibited_mygov_storage(self)
@@ -39,11 +42,13 @@ class ParticipantProfile(Document):
 			frappe.throw(_("Participant ID is assigned by the server."))
 		self.participant_id = generate_participant_id()
 		self._discard_deprecated_protected_values()
+		self._discard_deprecated_contact_alert_values()
 
 	def validate(self):
 		reject_prohibited_mygov_storage(self)
 		self.validate_participant_id()
 		self.validate_deprecated_protected_fields()
+		self.validate_deprecated_contact_alert_fields()
 		self.validate_conditional_mandatory_fields()
 
 	def validate_participant_id(self):
@@ -58,6 +63,18 @@ class ParticipantProfile(Document):
 	def _discard_deprecated_protected_values(self):
 		for fieldname in self.PROTECTED_SOURCE_FIELDS:
 			self.set(fieldname, None)
+
+	def _discard_deprecated_contact_alert_values(self):
+		for fieldname in self.CONTACT_ALERT_SOURCE_FIELDS:
+			self.set(fieldname, None)
+
+	def validate_deprecated_contact_alert_fields(self):
+		if self.is_new():
+			return
+		persisted = frappe.db.get_value(self.doctype, self.name, list(self.CONTACT_ALERT_SOURCE_FIELDS), as_dict=True)
+		for fieldname in self.CONTACT_ALERT_SOURCE_FIELDS:
+			if fieldname in self.__dict__ and str(self.get(fieldname) or "") != str(persisted.get(fieldname) or ""):
+				frappe.throw(_("Retired contact and alert fields are read-only."), frappe.PermissionError)
 
 	def validate_deprecated_protected_fields(self):
 		"""Keep migrated columns as immutable rollback evidence until later removal."""
