@@ -12,6 +12,8 @@ SYSTEM_MANAGER_ROLE = "System Manager"
 CARE_MANAGER_ROLE = "Care Manager"
 SUPPORT_COORDINATOR_ROLE = "Support Coordinator"
 SUPPORT_WORKER_ROLE = "Support Worker"
+CLINICAL_LEAD_ROLE = "Clinical Lead"
+PRIVACY_OFFICER_ROLE = "Privacy Officer"
 
 CARE_MANAGER_ROLES = frozenset({SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE})
 CARE_COORDINATION_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
@@ -44,6 +46,9 @@ DIRECT_PARTICIPANT_FIELDS = MappingProxyType(
 		"Controlled Medication Transaction": "participant",
 		"Mood Tracker": "participant",
 		"Participant Drug Count": "participant",
+		"Participant Contact": "participant",
+		"Participant Health Alert": "participant",
+		"Participant Health Alert Acknowledgement": "participant",
 		"Participant Sensitive Identity": "participant",
 		"Seizure Chart": "participant",
 		"Shift Handover Item": "participant",
@@ -85,8 +90,14 @@ PROTECTED_PARTICIPANT_DOCTYPES = frozenset(
 )
 
 STANDARD_DOCUMENT_ACCESS_ROLES = frozenset({CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE})
+CONTACT_ALERT_READ_ROLES = frozenset(
+	{CARE_MANAGER_ROLE, SUPPORT_COORDINATOR_ROLE, CLINICAL_LEAD_ROLE, PRIVACY_OFFICER_ROLE}
+)
 SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES = frozenset(
 	{
+		"Participant Contact",
+		"Participant Health Alert",
+		"Participant Health Alert Acknowledgement",
 		"Medication Administration Event",
 		"Medication Event Addendum",
 		"Medication PRN Effectiveness Review",
@@ -462,6 +473,10 @@ def _is_participant_boundary_administrator(user):
 
 
 def _has_participant_document_role(doctype, user):
+	if doctype in {
+		"Participant Contact", "Participant Health Alert", "Participant Health Alert Acknowledgement"
+	} and has_any_role(CONTACT_ALERT_READ_ROLES, user=user):
+		return True
 	if has_any_role(STANDARD_DOCUMENT_ACCESS_ROLES, user=user):
 		return True
 	return doctype in SUPPORT_WORKER_DOCUMENT_ACCESS_DOCTYPES and has_any_role(
@@ -499,6 +514,19 @@ def _resolve_protected_document_participant(doctype, doc):
 		medication_event = _field_value(doctype, doc, "medication_event")
 		if medication_event:
 			return resolve_participant("Medication Administration Event", medication_event)
+	if doctype == "Participant Health Alert Acknowledgement":
+		health_alert = _field_value(doctype, doc, "health_alert")
+		if not health_alert:
+			return None
+		authoritative_participant = frappe.db.get_value(
+			"Participant Health Alert", health_alert, "participant"
+		)
+		declared_participant = _field_value(doctype, doc, "participant")
+		if not authoritative_participant or (
+			declared_participant and declared_participant != authoritative_participant
+		):
+			return None
+		return authoritative_participant
 	return resolve_participant(doctype, doc)
 
 
@@ -550,6 +578,12 @@ def has_evidence_file_permission(doc, ptype=None, user=None, debug=False):
 	attached_doctype, attached_name = _file_attachment_target(doc)
 	if not attached_doctype or not attached_name:
 		return True
+	if attached_doctype in {"Participant Contact", "Participant Health Alert"}:
+		resolved_user = normalize_user(user)
+		if has_any_role({PRIVACY_OFFICER_ROLE}, user=resolved_user) and not has_any_role(
+			{SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE, CLINICAL_LEAD_ROLE}, user=resolved_user
+		):
+			return False
 	if attached_doctype not in PROTECTED_PARTICIPANT_DOCTYPES:
 		return True
 	if not is_retained_evidence_document(attached_doctype, attached_name):
@@ -569,6 +603,14 @@ def get_evidence_file_permission_query_conditions(user=None):
 		return ""
 	if not resolved_user:
 		return unrelated_condition
+	if has_any_role({PRIVACY_OFFICER_ROLE}, user=resolved_user) and not has_any_role(
+		{SYSTEM_MANAGER_ROLE, CARE_MANAGER_ROLE, CLINICAL_LEAD_ROLE}, user=resolved_user
+	):
+		metadata_doctypes = _sql_in({"Participant Contact", "Participant Health Alert"})
+		unrelated_condition = (
+			f"({unrelated_condition}) and ifnull({file_table}.`attached_to_doctype`, '') "
+			f"not in ({metadata_doctypes})"
+		)
 
 	evidence_conditions = []
 	for doctype in sorted(RETAINED_EVIDENCE_DOCTYPES):
@@ -774,6 +816,14 @@ def _incident_requires_retention(name, doc=None):
 
 
 def _support_worker_document_permission_allowed(doctype, doc, permission_type, user):
+	if doctype == "Participant Contact":
+		return permission_type in {"read", "select"} and _contact_is_current_for_worker(doc, user)
+	if doctype == "Participant Health Alert":
+		return permission_type in {"read", "select"} and _alert_is_current_for_worker(doc, user)
+	if doctype == "Participant Health Alert Acknowledgement":
+		if permission_type == "create":
+			return _acknowledgement_create_allowed(doc, user)
+		return permission_type in {"read", "select"} and _field_value(doctype, doc, "acknowledged_by") == user
 	if doctype == "Medication Administration Event":
 		return permission_type in {"create", "read", "select", "write", "submit"}
 	if doctype == "Medication Event Addendum":
@@ -799,6 +849,89 @@ def _support_worker_document_permission_allowed(doctype, doc, permission_type, u
 			return True
 		return permission_type in {"read", "select", "write"} and _incident_owned_by_reporter(doc, user)
 	return False
+
+
+def _contact_is_current_for_worker(doc, user):
+	row = _document_values(
+		"Participant Contact",
+		doc,
+		("participant", "status", "verification_status", "effective_from", "effective_to", "review_date"),
+	)
+	if not row or row.status != "Active" or row.verification_status != "Verified":
+		return False
+	today = frappe.utils.getdate()
+	return not (
+		(row.effective_from and frappe.utils.getdate(row.effective_from) > today)
+		or (row.effective_to and frappe.utils.getdate(row.effective_to) < today)
+		or (row.review_date and frappe.utils.getdate(row.review_date) < today)
+	) and _user_has_active_participant_assignment(row.participant, user)
+
+
+def _alert_is_current_for_worker(doc, user):
+	row = _document_values(
+		"Participant Health Alert",
+		doc,
+		("participant", "status", "verification_status", "effective_from", "effective_to", "review_date"),
+	)
+	if not row or row.status != "Active" or row.verification_status != "Verified":
+		return False
+	now = frappe.utils.now_datetime()
+	today = frappe.utils.getdate(now)
+	if (
+		(row.effective_from and frappe.utils.get_datetime(row.effective_from) > now)
+		or (row.effective_to and frappe.utils.get_datetime(row.effective_to) < now)
+		or (row.review_date and frappe.utils.getdate(row.review_date) < today)
+	):
+		return False
+	return _user_has_active_participant_assignment(row.participant, user)
+
+
+def _acknowledgement_create_allowed(doc, user):
+	health_alert = _field_value("Participant Health Alert Acknowledgement", doc, "health_alert")
+	if not health_alert:
+		return False
+	alert = frappe.db.get_value(
+		"Participant Health Alert",
+		health_alert,
+		[
+			"name", "participant", "status", "verification_status", "effective_from",
+			"effective_to", "review_date", "acknowledgement_required",
+		],
+		as_dict=True,
+	)
+	return bool(
+		alert
+		and alert.acknowledgement_required
+		and _alert_is_current_for_worker(alert, user)
+	)
+
+
+def _document_values(doctype, doc, fields):
+	if isinstance(doc, str):
+		return frappe.db.get_value(doctype, doc, list(fields), as_dict=True)
+	return frappe._dict({field: _field_value(doctype, doc, field) for field in fields})
+
+
+def _user_has_active_participant_assignment(participant, user):
+	if not participant or not user:
+		return False
+	return bool(
+		frappe.db.sql(
+			"""
+			select 1
+			from `tabSupport Task Assigned Staff` assigned
+			inner join `tabSupport Task` task on task.`name` = assigned.`parent`
+			inner join `tabSupport Plan` plan on plan.`name` = task.`support_plan`
+			where assigned.`parenttype` = 'Support Task'
+			  and assigned.`parentfield` = 'assigned_staff_table'
+			  and assigned.`staff_user` = %s
+			  and task.`status` = 'Active'
+			  and plan.`participant` = %s
+			limit 1
+			""",
+			(user, participant),
+		)
+	)
 
 
 def _prn_review_owned_by_worker(doc, user):
@@ -956,6 +1089,25 @@ def get_participant_permission_query_conditions(doctype, user=None):
 def _support_worker_query_condition(doctype, user):
 	table = _sql_table(doctype)
 	escaped_user = _sql_value(user)
+	if doctype == "Participant Contact":
+		return (
+			f"{table}.`status` = 'Active' and {table}.`verification_status` = 'Verified' "
+			f"and ({table}.`effective_from` is null or {table}.`effective_from` <= current_date) "
+			f"and ({table}.`effective_to` is null or {table}.`effective_to` >= current_date) "
+			f"and ({table}.`review_date` is null or {table}.`review_date` >= current_date) "
+			f"and {_active_assignment_query_condition(table, user)}"
+		)
+	if doctype == "Participant Health Alert":
+		current_datetime = _sql_value(str(frappe.utils.now_datetime()))
+		return (
+			f"{table}.`status` = 'Active' and {table}.`verification_status` = 'Verified' "
+			f"and ({table}.`effective_from` is null or {table}.`effective_from` <= {current_datetime}) "
+			f"and ({table}.`effective_to` is null or {table}.`effective_to` >= {current_datetime}) "
+			f"and ({table}.`review_date` is null or {table}.`review_date` >= current_date) "
+			f"and {_active_assignment_query_condition(table, user)}"
+		)
+	if doctype == "Participant Health Alert Acknowledgement":
+		return f"{table}.`acknowledged_by` = {escaped_user}"
 	if doctype == "Medication Administration Event":
 		return ""
 	if doctype == "Medication Event Addendum":
@@ -971,6 +1123,19 @@ def _support_worker_query_condition(doctype, user):
 	if doctype == "Incident":
 		return f"{table}.`reported_by` = {escaped_user} and {table}.`incident_status` = 'Open'"
 	return None
+
+
+def _active_assignment_query_condition(document_table, user):
+	return (
+		"exists (select 1 from `tabSupport Task Assigned Staff` assigned "
+		"inner join `tabSupport Task` task on task.`name` = assigned.`parent` "
+		"inner join `tabSupport Plan` plan on plan.`name` = task.`support_plan` "
+		"where assigned.`parenttype` = 'Support Task' "
+		"and assigned.`parentfield` = 'assigned_staff_table' "
+		f"and assigned.`staff_user` = {_sql_value(user)} "
+		"and task.`status` = 'Active' "
+		f"and plan.`participant` = {document_table}.`participant`)"
+	)
 
 
 def search_applicable_participants(
