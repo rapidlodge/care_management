@@ -81,6 +81,19 @@ class TestParticipantContact(IntegrationTestCase):
 			fresh.set(field, value)
 			self.assertRaises(frappe.PermissionError, fresh.save, ignore_permissions=True)
 
+	def test_verified_contact_authoritative_verification_evidence_is_immutable(self):
+		doc = self.make_contact().insert(ignore_permissions=True)
+		frappe.set_user(self.manager)
+		doc.verification_status = "Verified"
+		doc.save(ignore_permissions=True)
+		for field, value in (
+			("verified_by", "Administrator"),
+			("verified_on", frappe.utils.add_days(doc.verified_on, 1)),
+		):
+			fresh = frappe.get_doc(doc.doctype, doc.name)
+			fresh.set(field, value)
+			self.assertRaises(frappe.PermissionError, fresh.save, ignore_permissions=True)
+
 	def test_verified_inactive_contact_cannot_reactivate_or_delete(self):
 		doc = self.make_contact().insert(ignore_permissions=True)
 		frappe.set_user(self.manager)

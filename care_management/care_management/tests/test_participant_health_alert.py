@@ -70,6 +70,41 @@ class TestParticipantHealthAlert(IntegrationTestCase):
 		doc.verification_status = "Unverified"
 		self.assertRaises(frappe.PermissionError, doc.save, ignore_permissions=True)
 
+	def test_verified_active_alert_cannot_return_to_draft(self):
+		doc = self.make_alert().insert(ignore_permissions=True)
+		frappe.set_user(self.manager)
+		doc.verification_status = "Verified"
+		doc.save(ignore_permissions=True)
+		doc.status = "Active"
+		doc.save(ignore_permissions=True)
+		doc.status = "Draft"
+		self.assertRaises(frappe.PermissionError, doc.save, ignore_permissions=True)
+
+	def test_alert_authoritative_lifecycle_evidence_is_immutable(self):
+		doc = self.make_alert().insert(ignore_permissions=True)
+		frappe.set_user(self.manager)
+		doc.verification_status = "Verified"
+		doc.save(ignore_permissions=True)
+		for field, value in (
+			("verified_by", "Administrator"),
+			("verified_on", frappe.utils.add_days(doc.verified_on, 1)),
+		):
+			fresh = frappe.get_doc(doc.doctype, doc.name)
+			fresh.set(field, value)
+			self.assertRaises(frappe.PermissionError, fresh.save, ignore_permissions=True)
+
+		doc.reload()
+		doc.status = "Resolved"
+		doc.resolution_reason = "Resolved by current clinical plan"
+		doc.save(ignore_permissions=True)
+		for field, value in (
+			("resolved_by", "Administrator"),
+			("resolved_on", frappe.utils.add_days(doc.resolved_on, 1)),
+		):
+			fresh = frappe.get_doc(doc.doctype, doc.name)
+			fresh.set(field, value)
+			self.assertRaises(frappe.PermissionError, fresh.save, ignore_permissions=True)
+
 	def test_resolution_requires_reason_and_stamps_actor(self):
 		doc = self.make_alert().insert(ignore_permissions=True)
 		frappe.set_user(self.manager)

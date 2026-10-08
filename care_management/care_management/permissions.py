@@ -1098,10 +1098,11 @@ def _support_worker_query_condition(doctype, user):
 			f"and {_active_assignment_query_condition(table, user)}"
 		)
 	if doctype == "Participant Health Alert":
+		current_datetime = _sql_value(str(frappe.utils.now_datetime()))
 		return (
 			f"{table}.`status` = 'Active' and {table}.`verification_status` = 'Verified' "
-			f"and ({table}.`effective_from` is null or {table}.`effective_from` <= now()) "
-			f"and ({table}.`effective_to` is null or {table}.`effective_to` >= now()) "
+			f"and ({table}.`effective_from` is null or {table}.`effective_from` <= {current_datetime}) "
+			f"and ({table}.`effective_to` is null or {table}.`effective_to` >= {current_datetime}) "
 			f"and ({table}.`review_date` is null or {table}.`review_date` >= current_date) "
 			f"and {_active_assignment_query_condition(table, user)}"
 		)

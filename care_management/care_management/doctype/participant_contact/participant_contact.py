@@ -14,7 +14,10 @@ class ParticipantContact(Document):
 
 	def validate(self):
 		persisted = None if self.is_new() else frappe.db.get_value(
-			self.doctype, self.name, [*self.VERIFIED_IMMUTABLE_FIELDS, "status", "effective_to"], as_dict=True
+			self.doctype,
+			self.name,
+			[*self.VERIFIED_IMMUTABLE_FIELDS, "status", "effective_to", "verified_by", "verified_on"],
+			as_dict=True,
 		)
 		persisted_verification = persisted.get("verification_status") if persisted else None
 		if not self.participant or not frappe.db.exists("Participant Profile", self.participant):
@@ -37,6 +40,8 @@ class ParticipantContact(Document):
 			changed = [field for field in self.VERIFIED_IMMUTABLE_FIELDS if self.get(field) != persisted.get(field)]
 			if changed:
 				frappe.throw(_("Verified participant contact evidence is immutable."), frappe.PermissionError)
+			if any(self.get(field) != persisted.get(field) for field in ("verified_by", "verified_on")):
+				frappe.throw(_("Contact verification evidence is immutable."), frappe.PermissionError)
 			if persisted.status == "Inactive" and self.status != "Inactive":
 				frappe.throw(_("Inactive participant contacts cannot be reactivated."), frappe.PermissionError)
 		if self.verification_status == "Verified" and persisted_verification != "Verified":

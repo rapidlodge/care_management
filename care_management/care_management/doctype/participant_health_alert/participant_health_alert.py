@@ -13,7 +13,18 @@ class ParticipantHealthAlert(Document):
 
 	def validate(self):
 		persisted = {} if self.is_new() else (frappe.db.get_value(
-			self.doctype, self.name, [*self.CLINICAL_FIELDS, "status", "resolution_reason"], as_dict=True
+			self.doctype,
+			self.name,
+			[
+				*self.CLINICAL_FIELDS,
+				"status",
+				"resolution_reason",
+				"verified_by",
+				"verified_on",
+				"resolved_by",
+				"resolved_on",
+			],
+			as_dict=True,
 		) or {})
 		if not self.participant or not frappe.db.exists("Participant Profile", self.participant):
 			frappe.throw(_("A valid canonical participant is required."))
@@ -31,8 +42,21 @@ class ParticipantHealthAlert(Document):
 		if persisted.get("verification_status") == "Verified":
 			if any(self.has_value_changed(field) for field in self.CLINICAL_FIELDS):
 				frappe.throw(_("Verified participant health alert evidence is immutable."), frappe.PermissionError)
+			if any(self.get(field) != persisted.get(field) for field in ("verified_by", "verified_on")):
+				frappe.throw(_("Alert verification evidence is immutable."), frappe.PermissionError)
+			allowed_transitions = {
+				"Draft": {"Draft", "Active", "Resolved"},
+				"Active": {"Active", "Resolved"},
+				"Resolved": {"Resolved"},
+			}
+			if self.status not in allowed_transitions.get(persisted.get("status"), set()):
+				frappe.throw(_("Verified participant health alert status cannot move backward."), frappe.PermissionError)
 		if persisted.get("status") == "Resolved":
-			if self.status != "Resolved" or self.resolution_reason != persisted.get("resolution_reason"):
+			if (
+				self.status != "Resolved"
+				or self.resolution_reason != persisted.get("resolution_reason")
+				or any(self.get(field) != persisted.get(field) for field in ("resolved_by", "resolved_on"))
+			):
 				frappe.throw(_("Resolved participant health alerts are immutable."), frappe.PermissionError)
 		if self.verification_status == "Verified" and persisted.get("verification_status") != "Verified":
 			if not {"Care Manager", "Clinical Lead"}.intersection(frappe.get_roles()):

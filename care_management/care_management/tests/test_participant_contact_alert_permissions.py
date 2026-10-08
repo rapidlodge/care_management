@@ -1,4 +1,9 @@
+import json
+
 import frappe
+import frappe.client
+from frappe.core.doctype.data_export.exporter import DataExporter
+from frappe.desk import reportview
 from frappe.tests import IntegrationTestCase
 from care_management.care_management import permissions
 from care_management.care_management.tests.helpers import (
@@ -44,10 +49,12 @@ class TestParticipantContactAlertPermissions(IntegrationTestCase):
 		self.participant_b = ensure_r2c1_participant("R4 Permission B", "52345678901")
 		self.worker = ensure_r2c1_user("R4 Permission Worker", ["Support Worker"])
 		self.other_worker = ensure_r2c1_user("R4 Permission Other Worker", ["Support Worker"])
+		self.unassigned_worker = ensure_r2c1_user("R4 Permission Unassigned Worker", ["Support Worker"])
 		self.manager = ensure_r2c1_user("R4 Permission Manager", ["Care Manager"])
 		self.privacy = ensure_r2c1_user("R4 Permission Privacy", ["Privacy Officer"])
 		ensure_r2c1_user_permission(self.worker, self.participant_a)
 		ensure_r2c1_user_permission(self.other_worker, self.participant_b)
+		ensure_r2c1_user_permission(self.unassigned_worker, self.participant_a)
 		ensure_r2c1_user_permission(self.manager, self.participant_a)
 		ensure_r2c1_user_permission(self.privacy, self.participant_a)
 		plan = ensure_r2c1_support_plan(self.participant_a, "R4 Permission A")
@@ -115,6 +122,67 @@ class TestParticipantContactAlertPermissions(IntegrationTestCase):
 		self.assertIn("Support Task Assigned Staff", alert)
 		self.assertIn("verification_status", alert)
 
+	def test_real_worker_list_and_api_paths_enforce_lifecycle_assignment_and_participant(self):
+		current_contact = self.make_contact(self.participant_a, priority=86)
+		current_alert = self.make_alert(self.participant_a)
+		excluded_contacts = [
+			self.make_contact(self.participant_a, priority=87, verification_status="Unverified"),
+			self.make_contact(
+				self.participant_a,
+				priority=88,
+				effective_to=frappe.utils.add_days(frappe.utils.today(), -1),
+			),
+			self.make_contact(
+				self.participant_a,
+				priority=89,
+				review_date=frappe.utils.add_days(frappe.utils.today(), -1),
+			),
+			self.make_contact(self.participant_b, priority=90),
+		]
+		excluded_alerts = [
+			self.make_alert(self.participant_a, status="Draft", verification_status="Unverified"),
+			self.make_alert(
+				self.participant_a,
+				effective_to=frappe.utils.add_days(frappe.utils.now_datetime(), -1),
+			),
+			self.make_alert(
+				self.participant_a,
+				review_date=frappe.utils.add_days(frappe.utils.today(), -1),
+			),
+			self.make_alert(self.participant_b),
+		]
+
+		frappe.set_user(self.worker)
+		for doctype, included, excluded in (
+			("Participant Contact", current_contact, excluded_contacts),
+			("Participant Health Alert", current_alert, excluded_alerts),
+		):
+			names = [included.name, *(doc.name for doc in excluded)]
+			filters = {"name": ["in", names]}
+			self.assertEqual(
+				frappe.get_list(doctype, filters=filters, pluck="name"),
+				[included.name],
+			)
+			api_rows = frappe.client.get_list(
+				doctype,
+				fields=["name"],
+				filters=filters,
+				limit_page_length=20,
+			)
+			self.assertEqual([row.name for row in api_rows], [included.name])
+			self.assertTrue(frappe.has_permission(doctype, "read", doc=included, user=self.worker))
+			for excluded_doc in excluded:
+				self.assertFalse(
+					frappe.has_permission(doctype, "read", doc=excluded_doc, user=self.worker)
+				)
+
+		frappe.set_user(self.unassigned_worker)
+		for doctype, name in (
+			("Participant Contact", current_contact.name),
+			("Participant Health Alert", current_alert.name),
+		):
+			self.assertEqual(frappe.get_list(doctype, filters={"name": name}, pluck="name"), [])
+
 	def test_cross_participant_acknowledgement_attack_fails_without_persistence(self):
 		alert = self.make_alert(self.participant_b)
 		frappe.set_user(self.worker)
@@ -154,6 +222,70 @@ class TestParticipantContactAlertPermissions(IntegrationTestCase):
 		condition = permissions.get_evidence_file_permission_query_conditions(self.privacy)
 		self.assertIn("Participant Contact", condition)
 		self.assertIn("Participant Health Alert", condition)
+
+	def test_privacy_officer_document_and_api_paths_return_metadata_only(self):
+		contact = self.make_contact(self.participant_a, priority=91)
+		alert = self.make_alert(self.participant_a)
+		frappe.set_user(self.privacy)
+		for doc, restricted in (
+			(contact, {"display_name", "primary_phone", "email"}),
+			(alert, {"concise_summary", "response_instruction", "supporting_detail"}),
+		):
+			payload = frappe.client.get(doc.doctype, doc.name)
+			self.assertEqual(payload.participant, self.participant_a)
+			self.assertTrue(all(payload.get(field) is None for field in restricted))
+			rows = frappe.client.get_list(
+				doc.doctype,
+				fields=["name", "participant", *sorted(restricted)],
+				filters={"name": doc.name},
+				limit_page_length=20,
+			)
+			self.assertEqual(len(rows), 1)
+			self.assertFalse(restricted.intersection(rows[0]))
+
+	def test_privacy_officer_query_and_report_paths_are_scoped_and_metadata_only(self):
+		contact_a = self.make_contact(self.participant_a, priority=92)
+		contact_b = self.make_contact(self.participant_b, priority=93)
+		frappe.set_user(self.privacy)
+		rows = frappe.get_list(
+			"Participant Contact",
+			fields=["name", "participant"],
+			filters={"name": ["in", [contact_a.name, contact_b.name]]},
+		)
+		self.assertEqual([(row.name, row.participant) for row in rows], [(contact_a.name, self.participant_a)])
+
+		previous_form_dict = frappe.local.form_dict
+		try:
+			frappe.local.form_dict = frappe._dict(
+				{
+					"doctype": "Participant Contact",
+					"fields": json.dumps(["name", "participant", "display_name", "primary_phone"]),
+					"filters": json.dumps({"name": ["in", [contact_a.name, contact_b.name]]}),
+					"view": "Report",
+					"limit_page_length": 20,
+				}
+			)
+			report_rows = reportview.get_list()
+		finally:
+			frappe.local.form_dict = previous_form_dict
+		self.assertEqual(len(report_rows), 1)
+		self.assertEqual(report_rows[0].participant, self.participant_a)
+		self.assertNotIn("display_name", report_rows[0])
+		self.assertNotIn("primary_phone", report_rows[0])
+
+	def test_privacy_officer_export_path_is_denied(self):
+		self.make_contact(self.participant_a, priority=94)
+		frappe.set_user(self.privacy)
+		exporter = DataExporter(
+			doctype="Participant Contact",
+			all_doctypes=False,
+			with_data=True,
+			select_columns=json.dumps(
+				{"Participant Contact": ["participant", "display_name", "primary_phone"]}
+			),
+			file_type="CSV",
+		)
+		self.assertRaises(frappe.PermissionError, exporter.add_data)
 
 def _test(predicate):
 	def run(self): self.assertTrue(predicate())
