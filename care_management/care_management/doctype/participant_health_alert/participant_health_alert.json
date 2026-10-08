@@ -1,14 +1,14 @@
 {
  "actions":[],"allow_import":0,"allow_rename":0,"autoname":"hash","doctype":"DocType","engine":"InnoDB",
- "field_order":["participant","category","severity","concise_summary","response_instruction","supporting_detail","source_type","source_reference","verification_status","verified_by","verified_on","effective_from","effective_to","review_date","status","responsible_role","responsible_user","acknowledgement_required","resolved_by","resolved_on","resolution_reason"],
+ "field_order":["participant","category","severity","concise_summary","response_instruction","supporting_detail","source_type","source_reference","migration_key","verification_status","verified_by","verified_on","effective_from","effective_to","review_date","status","responsible_role","responsible_user","acknowledgement_required","resolved_by","resolved_on","resolution_reason"],
  "fields":[
   {"fieldname":"participant","fieldtype":"Link","label":"Participant","options":"Participant Profile","reqd":1,"search_index":1,"set_only_once":1},
-  {"fieldname":"category","fieldtype":"Select","label":"Category","options":"Clinical\nBehavioural\nEnvironmental\nSafety\nSelf-Harm\nOther","reqd":1},
-  {"fieldname":"severity","fieldtype":"Select","label":"Severity","options":"Low\nModerate\nHigh\nCritical","reqd":1},
-  {"fieldname":"concise_summary","fieldtype":"Small Text","label":"Operational Alert Summary","reqd":1},
-  {"fieldname":"response_instruction","fieldtype":"Small Text","label":"Safe Response Instruction"},
+  {"fieldname":"category","fieldtype":"Select","label":"Category","options":"Clinical\nBehavioural\nEnvironmental\nSafety\nSelf-Harm\nOther","reqd":1,"permlevel":1},
+  {"fieldname":"severity","fieldtype":"Select","label":"Severity","options":"Low\nModerate\nHigh\nCritical","reqd":1,"permlevel":1},
+  {"fieldname":"concise_summary","fieldtype":"Small Text","label":"Operational Alert Summary","reqd":1,"permlevel":1},
+  {"fieldname":"response_instruction","fieldtype":"Small Text","label":"Safe Response Instruction","permlevel":1},
   {"fieldname":"supporting_detail","fieldtype":"Text","label":"Restricted Supporting Detail","permlevel":1},
-  {"fieldname":"source_type","fieldtype":"Data","label":"Source Type"},{"fieldname":"source_reference","fieldtype":"Data","label":"Source Reference","permlevel":1},
+  {"fieldname":"source_type","fieldtype":"Data","label":"Source Type"},{"fieldname":"source_reference","fieldtype":"Data","label":"Source Reference","permlevel":1},{"fieldname":"migration_key","fieldtype":"Data","hidden":1,"label":"Migration Key","read_only":1,"unique":1},
   {"fieldname":"verification_status","fieldtype":"Select","label":"Verification Status","options":"Unverified\nVerified","default":"Unverified","reqd":1},
   {"fieldname":"verified_by","fieldtype":"Link","label":"Verified By","options":"User","read_only":1},{"fieldname":"verified_on","fieldtype":"Datetime","label":"Verified On","read_only":1},
   {"fieldname":"effective_from","fieldtype":"Datetime","label":"Effective From"},{"fieldname":"effective_to","fieldtype":"Datetime","label":"Effective To"},{"fieldname":"review_date","fieldtype":"Date","label":"Review Date"},
@@ -22,7 +22,7 @@
   {"role":"System Manager","read":1,"report":1,"export":1,"print":1,"permlevel":0},{"role":"System Manager","read":1,"permlevel":1},
   {"role":"Care Manager","create":1,"read":1,"write":1,"report":1,"export":1,"print":1,"permlevel":0},{"role":"Care Manager","read":1,"write":1,"permlevel":1},
   {"role":"Clinical Lead","create":1,"read":1,"write":1,"report":1,"print":1,"permlevel":0},{"role":"Clinical Lead","read":1,"write":1,"permlevel":1},
-  {"role":"Privacy Officer","read":1,"report":1,"permlevel":0},{"role":"Privacy Officer","read":1,"permlevel":1},
-  {"role":"Support Coordinator","read":1,"permlevel":0},{"role":"Support Worker","read":1,"permlevel":0}
+  {"role":"Privacy Officer","read":1,"report":1,"permlevel":0},
+  {"role":"Support Coordinator","read":1,"permlevel":0},{"role":"Support Coordinator","read":1,"permlevel":1},{"role":"Support Worker","read":1,"permlevel":0},{"role":"Support Worker","read":1,"permlevel":1}
  ],"sort_field":"modified","sort_order":"DESC"
 }

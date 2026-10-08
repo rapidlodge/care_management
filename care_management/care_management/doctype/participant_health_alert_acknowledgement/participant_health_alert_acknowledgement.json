@@ -1,12 +1,13 @@
 {
  "actions":[],"allow_import":0,"allow_rename":0,"autoname":"hash","doctype":"DocType","engine":"InnoDB",
- "field_order":["health_alert","participant","alert_version","acknowledged_by","acknowledged_on"],
+ "field_order":["health_alert","participant","alert_version","acknowledged_by","acknowledged_on","acknowledgement_key"],
  "fields":[
   {"fieldname":"health_alert","fieldtype":"Link","label":"Health Alert","options":"Participant Health Alert","reqd":1,"set_only_once":1},
   {"fieldname":"participant","fieldtype":"Link","label":"Participant","options":"Participant Profile","read_only":1,"reqd":1,"set_only_once":1},
   {"fieldname":"alert_version","fieldtype":"Data","label":"Alert Version","read_only":1,"reqd":1,"set_only_once":1},
   {"fieldname":"acknowledged_by","fieldtype":"Link","label":"Acknowledged By","options":"User","read_only":1,"reqd":1,"set_only_once":1},
-  {"fieldname":"acknowledged_on","fieldtype":"Datetime","label":"Acknowledged On","read_only":1,"reqd":1,"set_only_once":1}
+  {"fieldname":"acknowledged_on","fieldtype":"Datetime","label":"Acknowledged On","read_only":1,"reqd":1,"set_only_once":1},
+  {"fieldname":"acknowledgement_key","fieldtype":"Data","hidden":1,"label":"Acknowledgement Key","read_only":1,"unique":1}
  ],"module":"Care Management","name":"Participant Health Alert Acknowledgement","naming_rule":"Random","track_changes":1,
  "permissions":[{"role":"System Manager","read":1,"report":1},{"role":"Care Manager","create":1,"read":1,"report":1},{"role":"Clinical Lead","create":1,"read":1,"report":1},{"role":"Privacy Officer","read":1,"report":1},{"role":"Support Coordinator","create":1,"read":1},{"role":"Support Worker","create":1,"read":1}],
  "sort_field":"creation","sort_order":"DESC"

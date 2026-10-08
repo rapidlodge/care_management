@@ -6,8 +6,17 @@ from frappe.model.document import Document
 
 
 class ParticipantContact(Document):
+	VERIFIED_IMMUTABLE_FIELDS = frozenset({
+		"participant", "contact_type", "display_name", "relationship_description", "primary_phone",
+		"alternate_phone", "email", "preferred_contact_method", "availability_notes", "priority",
+		"verification_status", "unable_to_reach_instruction", "effective_from", "legacy_source_reference",
+	})
+
 	def validate(self):
-		persisted_verification = None if self.is_new() else frappe.db.get_value(self.doctype, self.name, "verification_status")
+		persisted = None if self.is_new() else frappe.db.get_value(
+			self.doctype, self.name, [*self.VERIFIED_IMMUTABLE_FIELDS, "status", "effective_to"], as_dict=True
+		)
+		persisted_verification = persisted.get("verification_status") if persisted else None
 		if not self.participant or not frappe.db.exists("Participant Profile", self.participant):
 			frappe.throw(_("A valid canonical participant is required."))
 		if not self.is_new() and frappe.db.get_value(self.doctype, self.name, "participant") != self.participant:
@@ -24,6 +33,12 @@ class ParticipantContact(Document):
 			if duplicate:
 				frappe.throw(_("An active contact already uses this priority."))
 		self.normalized_contact_key = re.sub(r"\W+", "", f"{self.display_name}{self.primary_phone}{self.email}").lower()
+		if persisted_verification == "Verified":
+			changed = [field for field in self.VERIFIED_IMMUTABLE_FIELDS if self.get(field) != persisted.get(field)]
+			if changed:
+				frappe.throw(_("Verified participant contact evidence is immutable."), frappe.PermissionError)
+			if persisted.status == "Inactive" and self.status != "Inactive":
+				frappe.throw(_("Inactive participant contacts cannot be reactivated."), frappe.PermissionError)
 		if self.verification_status == "Verified" and persisted_verification != "Verified":
 			if not {"Care Manager", "Clinical Lead"}.intersection(frappe.get_roles()):
 				frappe.throw(_("Clinical verification requires an authorized clinical role."), frappe.PermissionError)
@@ -31,5 +46,5 @@ class ParticipantContact(Document):
 			self.verified_on = frappe.utils.now_datetime()
 
 	def on_trash(self):
-		if self.verification_status == "Verified":
+		if self.verification_status == "Verified" or self.legacy_source_reference:
 			frappe.throw(_("Verified participant contacts must be inactivated, not deleted."))

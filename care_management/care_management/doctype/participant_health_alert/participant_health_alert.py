@@ -4,9 +4,16 @@ from frappe.model.document import Document
 
 
 class ParticipantHealthAlert(Document):
+	CLINICAL_FIELDS = frozenset({
+		"participant", "category", "severity", "concise_summary", "response_instruction",
+		"supporting_detail", "source_type", "source_reference", "migration_key", "verification_status",
+		"effective_from", "effective_to", "review_date", "responsible_role", "responsible_user",
+		"acknowledgement_required",
+	})
+
 	def validate(self):
 		persisted = {} if self.is_new() else (frappe.db.get_value(
-			self.doctype, self.name, ["verification_status", "status"], as_dict=True
+			self.doctype, self.name, [*self.CLINICAL_FIELDS, "status", "resolution_reason"], as_dict=True
 		) or {})
 		if not self.participant or not frappe.db.exists("Participant Profile", self.participant):
 			frappe.throw(_("A valid canonical participant is required."))
@@ -21,6 +28,12 @@ class ParticipantHealthAlert(Document):
 			conflict = frappe.db.get_value(self.doctype, {"participant": self.participant, "category": self.category, "status": "Active", "name": ["!=", self.name or ""]}, "name")
 			if conflict:
 				frappe.throw(_("A conflicting active alert requires manager resolution."))
+		if persisted.get("verification_status") == "Verified":
+			if any(self.has_value_changed(field) for field in self.CLINICAL_FIELDS):
+				frappe.throw(_("Verified participant health alert evidence is immutable."), frappe.PermissionError)
+		if persisted.get("status") == "Resolved":
+			if self.status != "Resolved" or self.resolution_reason != persisted.get("resolution_reason"):
+				frappe.throw(_("Resolved participant health alerts are immutable."), frappe.PermissionError)
 		if self.verification_status == "Verified" and persisted.get("verification_status") != "Verified":
 			if not {"Care Manager", "Clinical Lead"}.intersection(frappe.get_roles()):
 				frappe.throw(_("Clinical verification requires an authorized clinical role."), frappe.PermissionError)
